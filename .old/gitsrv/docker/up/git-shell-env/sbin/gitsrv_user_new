@@ -1,0 +1,23 @@
+#!/bin/bash
+set -eou pipefail
+
+USERNAME="${1:-}"
+[ -n "$USERNAME" ] || exit 1
+
+useradd "$USERNAME" -G gitusr --shell /usr/bin/git-shell
+
+HOMEDIR="$(realpath "/home/$USERNAME")"
+rm -rf "$HOMEDIR/*" "$HOMEDIR/.*"
+
+mkdir "$HOMEDIR/.ssh"
+touch "$HOMEDIR/.ssh/authorized_keys"
+
+mkdir "$HOMEDIR/git-shell-commands"
+
+touch "$HOMEDIR/.gitconfig"
+echo -e "[safe]\n  directory = *" >> "$HOMEDIR/.gitconfig"
+
+chown -R "$USERNAME:$USERNAME" "$HOMEDIR"
+chmod -R go-rwx "$HOMEDIR"
+
+exit 0

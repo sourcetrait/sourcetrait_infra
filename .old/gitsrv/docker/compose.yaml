@@ -1,0 +1,19 @@
+services:
+  git:
+    build: .
+    ports:
+      - "${HOST_SSH_PORT}:22"
+    volumes:
+      - srv_git:/srv/git
+    secrets:
+      - source: git_ssh_pubkey
+        target: /home/git/.ssh/authorized_keys
+        uid: '1000'
+        gid: '1000'
+        mode: 0600
+volumes:
+  srv_git:
+
+secrets:
+  git_ssh_pubkey:
+    file: ./secrets/id_git_gitsrv.pub

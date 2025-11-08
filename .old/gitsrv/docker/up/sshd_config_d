@@ -1,0 +1,10 @@
+PrintLastLog no
+AllowAgentForwarding no
+AllowTcpForwarding no
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+GSSAPIAuthentication no
+X11Forwarding no
+PubkeyAuthentication yes
+AllowGroups gitusr

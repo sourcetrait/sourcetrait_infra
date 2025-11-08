@@ -1,0 +1,16 @@
+#!/bin/bash
+set -eou pipefail
+
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+SCRIPT_NAME="$(basename "$(realpath "$0")")"
+source "$(realpath "$SCRIPT_DIR/../git-shell-env/lib/bash/gitsrv.lib.bash")"
+
+SCRIPT_USAGE="${SCRIPT_NAME} USERNAME"
+
+USERNAME="${1:-}"
+
+[ -n "$USERNAME" ] || usage err
+
+/usr/bin/sudo /home/git/git-shell-env/sbin/gitsrv_user_new "$USERNAME"
+
+exit 0

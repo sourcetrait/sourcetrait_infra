@@ -1,0 +1,14 @@
+#!/bin/bash
+set -eou pipefail
+
+USERNAME="${1:-}"
+PUBKEY="${2:-}"
+
+[ -n "$USERNAME" ] || exit 1
+[ -n "$PUBKEY" ] || exit 1
+
+HOMEDIR="$(realpath "/home/$USERNAME")"
+
+echo "$PUBKEY" > "$HOMEDIR/.ssh/authorized_keys"
+
+exit 0
