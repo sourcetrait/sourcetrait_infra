@@ -3,10 +3,18 @@ SourceTrait Infra
 [![License Badge]][License]
 
 ## Labs
-> `lab/`  
-> `  ad/kvm/` [Active Directory](./lab/ad)  
-> `    controller/` Windows Server (Core) 2025. Configured as a Domain Controller.  
-> `    member/` Windows Server (Core) 2025. Configured as a Member Server.
+- `lab/ad/kvm/` [Active Directory](./lab/ad)  
+
+## Builds
+```nuon
+[
+  'lab/ad/kvm/controller'
+  'lab/ad/kvm/member'
+]
+```
+
+## infra.nu
+- `infra build <path>` Builds specified component (VM, Container, etc)
 
 
 Repository
