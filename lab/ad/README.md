@@ -1,10 +1,10 @@
-# Domain Lab
-> `lab/domain/`
+# Active Directory Lab
+> `lab/ad/`
 
 Labs used for testing software against a domain controller and its
 member server/workstation system(s).
 
 ## Active Directory
-> `lab/domain/ad/kvm/`  
+> `lab/ad/kvm/`  
 > `  controller/` Windows Server (Core) 2025. Configured as a Domain Controller.  
-> `  member/windowserver/` Windows Server (Core) 2025. Configured as a Member Server.
+> `  member/` Windows Server (Core) 2025. Configured as a Member Server.
