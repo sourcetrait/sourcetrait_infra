@@ -4,10 +4,9 @@ SourceTrait Infra
 
 ## Labs
 > `lab/`  
-> ` ad/`  
-> `  kvm/`    
-> `   controller/` Windows Server (Core) 2025. Configured as a Domain Controller.  
-> `   member/` Windows Server (Core) 2025. Configured as a Member Server.
+> `  ad/kvm/`  
+> `    controller/` Windows Server (Core) 2025. Configured as a Domain Controller.  
+> `    member/` Windows Server (Core) 2025. Configured as a Member Server.
 
 
 Repository
