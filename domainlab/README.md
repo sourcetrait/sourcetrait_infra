@@ -1,11 +1,11 @@
 # Domain Lab
-> domainlab/
+> `domainlab/`
 
 Labs used for testing software against a domain controller and its
 member server/workstation system(s).
 
 ## Active Directory
-> domainlab/ad/
+> `domainlab/ad/`
 
 Overview:
 - `controller/` Windows Server (Core) 2025. Configured as a Domain Controller.
