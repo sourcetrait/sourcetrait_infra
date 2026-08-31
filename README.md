@@ -3,18 +3,14 @@ SourceTrait Infra
 [![License Badge]][License]
 
 ## Labs
-- `lab/ad/kvm/` [Active Directory](./lab/ad)  
+- `lab/ad/kvm` [Active Directory](./lab/ad)  
 
 ## Builds
-```nuon
-[
-  'lab/ad/kvm/controller'
-  'lab/ad/kvm/member'
-]
-```
+- `lab/ad/kvm/controller`
+- `lab/ad/kvm/member`
 
 ## infra.nu
-- `infra build <path>` Builds specified component (VM, Container, etc)
+- `infra build <build>` Builds specified component (VM, Container, etc)
 
 
 Repository
