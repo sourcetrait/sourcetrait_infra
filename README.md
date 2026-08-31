@@ -10,7 +10,7 @@ SourceTrait Infra
 - `lab/ad/kvm/member`
 
 ## infra.nu
-- `infra build <build>` Builds specified component (VM, Container, etc)
+- `./infra build <build>` Builds specified component (VM, Container, etc)
 
 
 Repository
