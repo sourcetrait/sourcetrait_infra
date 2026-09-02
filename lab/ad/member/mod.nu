@@ -18,7 +18,7 @@ export def build [state: record, name: string] {
     --input tablet,bus=usb
     --channel unix,target.type=virtio,target.name=org.qemu.guest_agent.0
     --memballoon virtio
-    --boot hd,cdrom
+    --boot uefi,hd,cdrom
   )
 }
 
@@ -41,7 +41,7 @@ export def debug_build [state: record, name: string] {
     --input tablet,bus=usb
     --channel unix,target.type=virtio,target.name=org.qemu.guest_agent.0
     --memballoon virtio
-    --boot hd,cdrom
+    --boot uefi,hd,cdrom
     --dry-run
     --print-xml
   )
@@ -73,10 +73,18 @@ export def build_unattend [state: record, name: string]: nothing -> path {
   }
 
   let unattend_iso = ($unattend_dir | path join 'unattend.iso')
+  let unattend_iso_link = ($state.path.unattend_dir | path join $"($name)_unattend.iso")
+  if ($unattend_iso_link | path exists) {
+    rm $unattend_iso_link
+  }
+  
   mv $iso_file $unattend_iso
-  chown -R ($env.USER):($state.group.vm) $unattend_iso
-  chmod -R 660 $unattend_iso
+  chown ($env.USER):($state.group.vm) $unattend_iso
+  chmod 660 $unattend_iso
+  ( cd $state.path.unattend_dir ; ln -s ($name | path join 'unattend.iso') $"($name)_unattend.iso" )
+  chown ($env.USER):($state.group.vm) $unattend_iso_link
+  chmod 660 $unattend_iso_link
 
-  rm -rf $tmp_dir
-  $unattend_iso
+  #rm -rf $tmp_dir
+  $unattend_iso_link
 }
