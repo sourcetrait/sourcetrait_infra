@@ -1,11 +1,65 @@
 #!/usr/bin/env nu
 
+const LAB_AD_CONTROLLER: path = 'lab/ad/controller'
+const LAB_AD_MEMBER: path = 'lab/ad/member'
+
 export const BUILDS: list<path> = [
-  'lab/ad/controller'
-  'lab/ad/member'
+  $LAB_AD_CONTROLLER
+  $LAB_AD_MEMBER
 ]
 
 export def builds []: nothing -> list<path> { BUILDS }
+
+def init [] {
+  let virtio_win_iso: path = setup_virtio_win_iso
+  {
+    path: {
+      virtio_win_iso: $virtio_win_iso,
+      unattend_dir: '/mnt/storage/kvm/unattend'
+    },
+    group: {
+      vm: 'vmusr'
+    },
+  }
+}
+
+export def 'main debug build' [build: path@builds, name: string] {
+  if not ($build in $BUILDS) {
+    error make $"not a build"
+  }
+
+  let state = init
+
+  match $build {
+    $LAB_AD_MEMBER => {
+        overlay use --prefix ./lab/ad/member
+        member debug_build $state $name
+    },
+    _ => {
+      error make $"not a build"
+    },
+  }
+}
+
+export def 'main debug unattend' [build: path@builds, name: string] {
+  if not ($build in $BUILDS) {
+    error make $"not a build"
+  }
+
+  let state = init
+
+  let xml = match $build {
+    $LAB_AD_MEMBER => {
+        overlay use --prefix ./lab/ad/member
+        member debug_unattend $state $name
+    },
+    _ => {
+      error make $"not a build"
+    },
+  }
+
+  print $xml
+}
 
 export def 'main build' [build: path@builds, name: string] {
   if not ($build in $BUILDS) {
@@ -15,36 +69,9 @@ export def 'main build' [build: path@builds, name: string] {
   let state = init
 
   match $build {
-    'lab/ad/member' => {
-        overlay use --prefix ./lab/ad/kvm/member 
+    $LAB_AD_MEMBER => {
+        overlay use --prefix ./lab/ad/member 
         member build $state $name
-        overlay hide member
-    },
-    _ => {},
-  }
-}
-
-def init [] {
-  let virtio_win_iso: path = setup_virtio_win_iso
-  {
-    paths: {
-      virtio_win_iso: $virtio_win_iso
-    }
-  }
-}
-
-export def 'main debug def' [build: path@builds, name: string] {
-  if not ($build in $BUILDS) {
-    error make $"not a build"
-  }
-
-  let state = init
-
-  match $build {
-    'lab/ad/kvm/member' => {
-        overlay use --prefix ./lab/ad/kvm/member
-        member debug_def $state $name
-        overlay hide member
     },
     _ => {
       error make $"not a build"
@@ -52,23 +79,24 @@ export def 'main debug def' [build: path@builds, name: string] {
   }
 }
 
-export def 'main debug auto' [build: path@builds, name: string] {
+export def 'main build unattend' [build: path@builds, name: string]: nothing -> path {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
   let state = init
 
-  match $build {
-    'lab/ad/kvm/member' => {
-        overlay use --prefix ./lab/ad/kvm/member
-        member debug_auto $state $name
-        overlay hide member
+  let iso_file = match $build {
+    $LAB_AD_MEMBER => {
+        overlay use --prefix ./lab/ad/member 
+        member build_unattend $state $name
     },
     _ => {
       error make $"not a build"
     },
   }
+
+  $iso_file
 }
 
 # Downloads the ISO if it isn't already in the ISO dir.
