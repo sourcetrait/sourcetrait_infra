@@ -6,10 +6,10 @@ export def build [state: record, name: string] {
     --memory 32768
     --vcpus 16
     --os-variant win2k25
-    --cdrom /mnt/storage/kvm/iso/windows_server_2025_eval.iso
+    --disk path=/mnt/storage/kvm/disk/($name).qcow2,format=qcow2,size=260,bus=sata
+    --cdrom /mnt/storage/kvm/iso/windows_server_2025_eval_noprompt.iso
     --disk path=($unattend_iso),device=cdrom,bus=sata
     --disk path=($state.path.virtio_win_iso),device=cdrom,bus=sata
-    --disk path=/mnt/storage/kvm/disk/($name).qcow2,format=qcow2,size=260,bus=sata
     --network network=default,model=e1000e
     --graphics spice,listen=127.0.0.1
     --video qxl
@@ -29,10 +29,10 @@ export def debug_build [state: record, name: string] {
     --memory 32768
     --vcpus 16
     --os-variant win2k25
-    --cdrom /mnt/storage/kvm/iso/windows_server_2025_eval.iso
+    --disk path=/mnt/storage/kvm/disk/($name).qcow2,format=qcow2,size=260,bus=sata
+    --cdrom /mnt/storage/kvm/iso/windows_server_2025_eval_noprompt.iso
     --disk path=($unattend_iso),device=cdrom,bus=sata
     --disk path=($state.path.virtio_win_iso),device=cdrom,bus=sata
-    --disk path=/mnt/storage/kvm/disk/($name).qcow2,format=qcow2,size=260,bus=sata
     --network network=default,model=e1000e
     --graphics spice,listen=127.0.0.1
     --video qxl

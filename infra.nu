@@ -11,10 +11,9 @@ export const BUILDS: list<path> = [
 export def builds []: nothing -> list<path> { BUILDS }
 
 def init [] {
-  let virtio_win_iso: path = setup_virtio_win_iso
   {
     path: {
-      virtio_win_iso: $virtio_win_iso,
+      virtio_win_iso: '/mnt/storage/kvm/iso/virtio-win.iso'
       unattend_dir: '/mnt/storage/kvm/unattend'
     },
     group: {
@@ -100,12 +99,13 @@ export def 'main build unattend' [build: path@builds, name: string]: nothing -> 
 }
 
 # Downloads the ISO if it isn't already in the ISO dir.
-def setup_virtio_win_iso []: nothing -> path {
+def setup_virtio_win_iso []: nothing -> nothing {
   const VIRTIO_WIN_ISO_FILENAME: path = 'virtio-win.iso'
   const VIRTIO_WIN_ISO_PATH: path = '/mnt/storage/kvm/iso/virtio-win.iso'
   const VIRTIO_WIN_ISO_URI: string = 'https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso'
 
-  if ($VIRTIO_WIN_ISO_PATH | path exists) { return $VIRTIO_WIN_ISO_PATH }
+  if ($VIRTIO_WIN_ISO_PATH | path exists) { return }
+
   let tmpdir = (mktemp -d .virtio-win-iso.XXXXXX)
   let tmpfile = ($tmpdir | path join $VIRTIO_WIN_ISO_FILENAME)
   try {
@@ -114,12 +114,52 @@ def setup_virtio_win_iso []: nothing -> path {
   } finally {
     rm $tmpdir
   }
+}
 
-  if not ($VIRTIO_WIN_ISO_PATH | path exists) {
-    error make $"Unable to setup virtio-win.iso"
+def setup_windowserver_iso []: nothing -> nothing {
+  const WINDOWSERVER_ISO_LINK: path = '/mnt/storage/kvm/iso/windows_server_2025_eval.iso'
+  const WINDOWSERVER_NOPROMPT_ISO: path = '/mnt/storage/kvm/iso/windows/server/2025/windows_server_2025_eval_noprompt.iso'
+  const WINDOWSERVER_NOPROMPT_ISO_LINK: path = '/mnt/storage/kvm/iso/windows_server_2025_eval_noprompt.iso'
+
+  if ($WINDOWSERVER_NOPROMPT_ISO | path exists) { return }
+
+  let label = (blkid -s LABEL -o value $WINDOWSERVER_ISO_LINK)
+  let tmpdir = (mktemp -d 'infra-setup.XXXXXX')
+  let srcdir = ($tmpdir | path join 'src')
+  let dstdir = ($tmpdir | path join 'dst')
+  cd $tmpdir
+  mkdir $srcdir $dstdir
+  sudo mount -t udf $WINDOWSERVER_ISO_LINK $srcdir
+  cp --recursive --all ($"($srcdir)/*" | into glob) $dstdir
+  sudo umount $srcdir
+
+  chmod -R u+w $dstdir
+  cd ($dstdir | path join 'efi/microsoft/boot')
+  mv 'efisys.bin' 'efisys.bin.old'
+  mv 'efisys_noprompt.bin' 'efisys.bin'
+  cd $tmpdir
+
+  (genisoimage -o $WINDOWSERVER_NOPROMPT_ISO
+    -udf -iso-level 3 -allow-limited-size
+    -J -joliet-long -R -D -N -relaxed-filenames
+    -V $"($label)"
+    -b boot/etfsboot.com -no-emul-boot -boot-load-size 8 -boot-info-table
+    -eltorito-alt-boot
+    -e efi/microsoft/boot/efisys.bin -no-emul-boot
+    $dstdir)
+
+  if ($WINDOWSERVER_NOPROMPT_ISO_LINK | path exists) {
+    rm $WINDOWSERVER_NOPROMPT_ISO_LINK
   }
+  ( cd /mnt/storage/kvm/iso ; ln -s windows/server/2025/windows_server_2025_eval_noprompt2.iso )
+  
+  rm -rf $tmpdir
+}
 
-  $VIRTIO_WIN_ISO_PATH
+def 'main setup windows server' []: nothing -> nothing {
+  sudo -v
+  setup_windowserver_iso
+  setup_virtio_win_iso
 }
 
 # do stuff
