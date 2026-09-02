@@ -45,4 +45,6 @@ export def debug_def [state: record, name: string]: nothing -> string {
 }
 
 export def debug_auto [state: record, name: string]: nothing -> string {
+  open (path self | path dirname | 'autounattend.xml.liquid')
+    | from grimoire liquid { name: $name }
 }

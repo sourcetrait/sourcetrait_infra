@@ -1,8 +1,8 @@
 #!/usr/bin/env nu
 
 export const BUILDS: list<path> = [
-  'lab/ad/kvm/controller'
-  'lab/ad/kvm/member'
+  'lab/ad/controller'
+  'lab/ad/member'
 ]
 
 export def builds []: nothing -> list<path> { BUILDS }
@@ -15,7 +15,7 @@ export def 'main build' [build: path@builds, name: string] {
   let state = init
 
   match $build {
-    'lab/ad/kvm/member' => {
+    'lab/ad/member' => {
         overlay use --prefix ./lab/ad/kvm/member 
         member build $state $name
         overlay hide member
