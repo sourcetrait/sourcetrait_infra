@@ -7,12 +7,19 @@ export const BUILDS: list<path> = [
 
 export def builds []: nothing -> list<path> { BUILDS }
 
-export def 'main build' [build: path@builds] {
+export def 'main build' [build: path@builds, name: string] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
-  print $build
+  match $build {
+    'lab/ad/kvm/member' => {
+        overlay use --prefix ./lab/ad/kvm/member 
+        member build $name
+        overlay hide member
+    },
+    _ => {},
+  }
 }
 
 # do stuff
