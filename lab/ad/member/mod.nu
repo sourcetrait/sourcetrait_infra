@@ -2,7 +2,7 @@
 export def build [state: record, img: record] {
   let unattend_iso = (build_unattend $state $img)
   (virt-install
-    --name ($img.hostname)
+    --name ($img.name)
     --memory 32768
     --vcpus 16
     --os-variant win2k25
