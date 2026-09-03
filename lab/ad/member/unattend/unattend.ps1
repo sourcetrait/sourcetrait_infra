@@ -109,7 +109,7 @@ function step_net {
 
 function step_sconfig {
     # disable sconfig on startup
-    Set-SConfig -AutoLaunch $false
+    powershell -NoProfile -Command 'Set-SConfig -AutoLaunch $false'
 }
 
 # step1: pwsh
@@ -132,6 +132,9 @@ switch ($step) {
        step_vs
        step_rust
        step_choco_packages
+       step_sconfig
+       step_logon_count
+       step_reboot
     }
     default {
         Write-Error "Unknown step: $step"

@@ -175,12 +175,6 @@
           <RequiresUserInput>false</RequiresUserInput>
           <CommandLine>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 111 1&gt;C:\Windows\Temp\unattend_111.log 2&gt;&amp;1"</CommandLine>
         </SynchronousCommand>
-        <SynchronousCommand wcm:action="add">
-          <Order>2</Order>
-          <Description>stop autologon</Description>
-          <RequiresUserInput>false</RequiresUserInput>
-          <CommandLine>reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoLogonCount /t REG_DWORD /d 0 /f</CommandLine>
-        </SynchronousCommand>
       </FirstLogonCommands>
 
     </component>
