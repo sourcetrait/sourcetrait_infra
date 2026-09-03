@@ -162,7 +162,6 @@ switch ($step) {
         step_disk
         step_defender
         step_default_profile
-        step_user_lab
     }
     3 {
         step_choco
@@ -172,6 +171,7 @@ switch ($step) {
        step_update
        step_net
        step_virtio
+       step_user_lab
        step_vs
        step_rust
        step_choco_packages
