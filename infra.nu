@@ -13,8 +13,12 @@ export def builds []: nothing -> list<path> { BUILDS }
 def init [] {
   {
     path: {
-      virtio_win_iso: '/mnt/storage/kvm/iso/virtio-win.iso'
-      unattend_dir: '/mnt/storage/kvm/unattend'
+      vm: {
+        iso_dir: '/mnt/storage/kvm/iso'
+        disk_dir: '/mnt/storage/kvm/disk'
+        unattend_dir: '/mnt/storage/kvm/unattend'
+        virtio_win_iso: '/mnt/storage/kvm/iso/virtio-win.iso'
+      }
     },
     group: {
       vm: 'vmusr'
@@ -22,7 +26,7 @@ def init [] {
   }
 }
 
-export def 'main debug build' [build: path@builds, name: string] {
+export def 'main debug build' [build: path@builds, cfg: record<hostname: string>] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
@@ -32,7 +36,7 @@ export def 'main debug build' [build: path@builds, name: string] {
   match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member
-        member debug_build $state $name
+        member debug_build $state $cfg
     },
     _ => {
       error make $"not a build"
@@ -40,7 +44,7 @@ export def 'main debug build' [build: path@builds, name: string] {
   }
 }
 
-export def 'main debug unattend' [build: path@builds, name: string] {
+export def 'main debug unattend' [build: path@builds, cfg: record<hostname: string>] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
@@ -50,7 +54,7 @@ export def 'main debug unattend' [build: path@builds, name: string] {
   let xml = match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member
-        member debug_unattend $state $name
+        member debug_unattend $state $cfg
     },
     _ => {
       error make $"not a build"
@@ -60,7 +64,7 @@ export def 'main debug unattend' [build: path@builds, name: string] {
   print $xml
 }
 
-export def 'main build' [build: path@builds, name: string] {
+export def 'main build' [build: path@builds, cfg: record<hostnamename: string>] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
@@ -70,7 +74,7 @@ export def 'main build' [build: path@builds, name: string] {
   match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member 
-        member build $state $name
+        member build $state $cfg
     },
     _ => {
       error make $"not a build"
@@ -78,7 +82,7 @@ export def 'main build' [build: path@builds, name: string] {
   }
 }
 
-export def 'main build unattend' [build: path@builds, name: string]: nothing -> path {
+export def 'main build unattend' [build: path@builds, cfg: record<hostname: string>]: nothing -> path {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
@@ -88,7 +92,7 @@ export def 'main build unattend' [build: path@builds, name: string]: nothing -> 
   let iso_file = match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member 
-        member build_unattend $state $name
+        member build_unattend $state $cfg
     },
     _ => {
       error make $"not a build"

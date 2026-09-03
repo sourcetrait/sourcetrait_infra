@@ -91,7 +91,7 @@
         processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
         language="neutral" versionScope="nonSxS"
         xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-      <ComputerName>{{ name }}</ComputerName>
+      <ComputerName>{{ hostname }}</ComputerName>
     </component>
 
     <component name="Microsoft-Windows-TerminalServices-LocalSessionManager"
@@ -100,6 +100,30 @@
         xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
       <fDenyTSConnections>true</fDenyTSConnections>
     </component>
+
+    <component name="Microsoft-Windows-Deployment"
+        processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+        language="neutral" versionScope="nonSxS"
+        xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Path>powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_1.ps1</Path>
+          <WillReboot>Always</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Path>powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_2.ps1</Path>
+          <WillReboot>Always</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Path>pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 3</Path>
+          <WillReboot>Always</WillReboot>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+
   </settings>
 
   <settings pass="oobeSystem">
