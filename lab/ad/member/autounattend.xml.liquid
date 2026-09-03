@@ -130,12 +130,6 @@
           <Path>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 4 1&gt;C:\Windows\Temp\unattend_4.log 2&gt;&amp;1"</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add">
-          <Order>5</Order>
-          <Description>Step 5</Description>
-          <Path>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 5 1&gt;C:\Windows\Temp\unattend_5.log 2&gt;&amp;1"</Path>
-          <WillReboot>Always</WillReboot>
-        </RunSynchronousCommand>
       </RunSynchronous>
     </component>
 
@@ -179,7 +173,7 @@
           <Order>1</Order>
           <Description>network private</Description>
           <RequiresUserInput>false</RequiresUserInput>
-          <CommandLine>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 6 1&gt;C:\Windows\Temp\unattend_6.log 2&gt;&amp;1"</CommandLine>
+          <CommandLine>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 5 1&gt;C:\Windows\Temp\unattend_5.log 2&gt;&amp;1"</CommandLine>
         </SynchronousCommand>
         <SynchronousCommand wcm:action="add">
           <Order>2</Order>

@@ -54,7 +54,7 @@ function step_nushell {
     $url = ($rel.assets | Where-Object name -like 'nu-*-x86_64-pc-windows-msvc.msi').browser_download_url
     $dst = "$env:TEMP\nushell.msi"
     Invoke-WebRequest -Uri $url -OutFile $dst
-    $p = Start-Process msiexec.exe -ArgumentList "/i `"$dst`" ALLUSERS=1 /norestart" -Wait -PassThru
+    $p = Start-Process msiexec.exe -ArgumentList "/i `"$dst`" ALLUSERS=1 /qn /norestart" -Wait -PassThru
     if ($p.ExitCode -ne 0) { exit 3 }
 
 }
@@ -97,7 +97,7 @@ function step_net {
     # nla classifies the network on the first full boot; wait for the profile
     $deadline = (Get-Date).AddMinutes(2)
     while (-not (Get-NetConnectionProfile -ErrorAction SilentlyContinue)) {
-        if ((Get-Date) -gt $deadline) { throw 'no network profile after 5 min' }
+        if ((Get-Date) -gt $deadline) { throw 'no network profile after timeout' }
         Start-Sleep 2
     }
 
@@ -118,19 +118,17 @@ switch ($step) {
     3 {
         step_sshd
         step_disk
-    }
-    4 {
         step_choco
         step_nushell
     }
-    5 {
+    4 {
         step_nushell_default
         step_choco_packages
         step_rust
         step_defender
         step_sconfig
     }
-    6 {
+    5 {
        step_net
     }
     default {
