@@ -64,7 +64,7 @@ function step_nushell_default {
     Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command nu).Source
 }
 
-$CHOCO_PACKAGES = @( 'git' 'helix' )
+$CHOCO_PACKAGES = @('git','helix')
 
 function step_choco_packages {
     $PSNativeCommandUseErrorActionPreference = $false
