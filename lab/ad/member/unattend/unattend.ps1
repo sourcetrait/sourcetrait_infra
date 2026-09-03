@@ -59,11 +59,6 @@ function step_nushell {
 
 }
 
-function step_nushell_default {
-    # configure nushell as the default for ssh logins
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command nu).Source
-}
-
 $CHOCO_PACKAGES = @('git','helix')
 
 function step_choco_packages {
@@ -130,13 +125,12 @@ switch ($step) {
         step_choco_packages
     }
     5 {
-        step_nushell_default
         step_rust
         step_defender
-        step_sconfig
     }
     11 {
        step_net
+       step_sconfig
     }
     default {
         Write-Error "Unknown step: $step"
