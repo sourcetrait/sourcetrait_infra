@@ -28,6 +28,12 @@ function step_sshd {
 
     # configure powershell as the default for ssh logins (replaced by nu later)
     Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command pwsh).Source
+
+    $cfg = 'C:\ProgramData\ssh\sshd_config'
+    $conf = Get-Content $cfg | Where-Object { $_ -notmatch '^\s*Match Group administrators' -and $_ -notmatch 'administrators_authorized_keys' }
+    $conf = $conf -replace '^\s*AllowGroups .*', 'AllowGroups "openssh users"'
+    @('PasswordAuthentication no', 'KbdInteractiveAuthentication no') + $conf | Set-Content $cfg -Encoding ascii
+    Restart-Service sshd
 }
 
 function step_disk {
@@ -91,6 +97,18 @@ function step_rust {
     [Environment]::SetEnvironmentVariable('Path', $path.TrimEnd(';') + ';C:\ProgramData\cargo\bin', 'Machine')
 }
 
+function step_user_lab {
+    # lab's profile does not exist until a logon; force one, then lay down its .ssh
+    $pw = ConvertTo-SecureString 'sourceTr@1t' -AsPlainText -Force
+    $cred = New-Object System.Management.Automation.PSCredential('lab', $pw)
+    Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
+    $ssh = 'C:\Users\lab\.ssh'
+    Copy-Item 'E:\.ssh' $ssh -Recurse
+    Get-ChildItem $ssh -Recurse -File | ForEach-Object { $_.IsReadOnly = ($_.Name -ne 'authorized_keys') }
+    icacls.exe $ssh /setowner lab /t /c
+    icacls.exe $ssh /inheritance:r /grant 'lab:(OI)(CI)F' /t /c
+}
+
 function step_defender {
     # uninstall defender
     Uninstall-WindowsFeature -Name Windows-Defender -Remove
@@ -112,6 +130,14 @@ function step_sconfig {
     powershell -NoProfile -Command 'Set-SConfig -AutoLaunch $false'
 }
 
+function step_ngen {
+    # compile the queued .net framework native images now, so the built system idles
+    foreach ($root in 'Framework64', 'Framework') {
+        $ngen = Get-ChildItem "$env:windir\Microsoft.NET\$root\v*\ngen.exe" | Sort-Object { [version]$_.Directory.Name.TrimStart('v') } | Select-Object -Last 1
+        & $ngen.FullName executeQueuedItems
+    }
+}
+
 function step_logon_count {
     # windows adds one to LogonCount; zero it so the next boot needs a real logon
     reg add 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' /v AutoLogonCount /t REG_DWORD /d 0 /f
@@ -122,27 +148,35 @@ function step_reboot {
     shutdown /r /t 0
 }
 
+function step_default_profile {
+    # new users get ~\.cargo\bin on their own path, via the default profile hive
+    reg.exe load 'HKU\DefaultUser' 'C:\Users\Default\NTUSER.DAT'
+    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.cargo\bin' /f
+    reg.exe unload 'HKU\DefaultUser'
+}
+
 # step1: pwsh
 switch ($step) {
     2 {
-        step_update
-    }
-    3 {
         step_sshd
         step_disk
         step_defender
+        step_default_profile
+        step_user_lab
     }
-    4 {
+    3 {
         step_choco
         step_nushell
     }
     111 {
+       step_update
        step_net
        step_virtio
        step_vs
        step_rust
        step_choco_packages
        step_sconfig
+       step_ngen
        step_logon_count
        step_reboot
     }

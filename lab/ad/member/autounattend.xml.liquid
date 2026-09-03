@@ -124,12 +124,6 @@
           <Path>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 3 1&gt;C:\Windows\Temp\unattend_3.log 2&gt;&amp;1"</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
-        <RunSynchronousCommand wcm:action="add">
-          <Order>4</Order>
-          <Description>Step 4</Description>
-          <Path>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 4 1&gt;C:\Windows\Temp\unattend_4.log 2&gt;&amp;1"</Path>
-          <WillReboot>Always</WillReboot>
-        </RunSynchronousCommand>
       </RunSynchronous>
     </component>
 
@@ -154,6 +148,17 @@
           <Value>sourceTr@1t</Value>
           <PlainText>true</PlainText>
         </AdministratorPassword>
+          <LocalAccounts>
+        <LocalAccount wcm:action="add">
+          <Name>lab</Name>
+          <DisplayName>lab</DisplayName>
+          <Group>Administrators;OpenSSH Users</Group>
+          <Password>
+            <Value>sourceTr@1t</Value>
+            <PlainText>true</PlainText>
+          </Password>
+        </LocalAccount>
+      </LocalAccounts>
       </UserAccounts>
 
       <TimeZone>UTC</TimeZone>

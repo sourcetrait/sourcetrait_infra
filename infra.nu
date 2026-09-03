@@ -10,33 +10,73 @@ export const BUILDS: list<path> = [
 
 export def builds []: nothing -> list<path> { BUILDS }
 
+const CONFIG_DIRNAME: directory = 'sourcetrait/infra'
+const INFRA_DIR: directory = path self .
+
+
 def init [] {
+  let config_home = $env | get -o XDG_CONFIG_HOME | default ($env.HOME | path join '.config')
+  let config_dir = $config_home | path join $CONFIG_DIRNAME
+  if not ($config_dir | path exists) {
+    mkdir $config_dir
+    cp ($INFRA_DIR | path join 'assets' 'default' 'config.toml') $config_dir
+  }
+
+  let cfg = open ($config_dir | path join 'config.toml')
+  if not ($cfg.key.home | path join $"($cfg.key.lab_login).pub" | path exists) {
+    error make $"lab login pub key does not exist: ($cfg.key.home | path join $"($cfg.key.lab_login).pub")"
+  } else if not ($cfg.key.home | path join $cfg.key.lab_dumb | path exists) {
+    error make $"dumb lab key does not exist: ($cfg.key.home | path join $cfg.key.lab_dumb)"
+  } else if not ($cfg.key.home | path join $"($cfg.key.lab_dumb).pub" | path exists) {
+    error make $"dumb lab pubkey does not exist: ($cfg.key.home | path join $"($cfg.key.lab_dumb).pub")"
+  } 
+  
   {
     path: {
+      infra_dir: $INFRA_DIR
       vm: {
         iso_dir: '/mnt/storage/kvm/iso'
         disk_dir: '/mnt/storage/kvm/disk'
         unattend_dir: '/mnt/storage/kvm/unattend'
         virtio_win_iso: '/mnt/storage/kvm/iso/virtio-win.iso'
+      },
+      key: {
+        lab_login_pub: ($cfg.key.home | path join $"($cfg.key.lab_login).pub" | path expand)
+        lab_dumb: ($cfg.key.home | path join $cfg.key.lab_dumb | path expand)
+        lab_dumb_pub: ($cfg.key.home | path join $"($cfg.key.lab_dumb).pub" | path expand)
       }
     },
     group: {
       vm: 'vmusr'
     },
+    cfg: $cfg,
   }
 }
 
-export def 'main debug build' [build: path@builds, cfg: record<hostname: string>] {
+def make_img [img: oneof<string,record>]: nothing -> record<name: string, hostname: string> {
+  let img = match ($img | describe) {
+    'string' => { name: $img },
+    _ => $img,
+  }
+  
+  {
+    name: $img.name
+    hostname: ($img | get -o name | default $img.name)
+  }
+}
+
+export def 'main debug build' [build: path@builds, img: oneof<string,record>] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
   let state = init
+  let img = make_img $img
 
   match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member
-        member debug_build $state $cfg
+        member debug_build $state $img
     },
     _ => {
       error make $"not a build"
@@ -44,17 +84,18 @@ export def 'main debug build' [build: path@builds, cfg: record<hostname: string>
   }
 }
 
-export def 'main debug unattend' [build: path@builds, cfg: record<hostname: string>] {
+export def 'main debug unattend' [build: path@builds, img: oneof<string, record>] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
   let state = init
+  let img = make_img $img
 
   let xml = match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member
-        member debug_unattend $state $cfg
+        member debug_unattend $state $img
     },
     _ => {
       error make $"not a build"
@@ -64,24 +105,18 @@ export def 'main debug unattend' [build: path@builds, cfg: record<hostname: stri
   print $xml
 }
 
-def make_cfg [hostname: string]: nothing -> record<hostname: string> {
-  {
-    hostname: $hostname
-  }
-}
-
-export def 'main build' [build: path@builds, hostname: string] {
+export def 'main build' [build: path@builds, img: oneof<string, record>] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
   let state = init
-  let cfg = make_cfg $hostname
+  let img = make_img $img
 
   match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member 
-        member build $state $cfg
+        member build $state $img
     },
     _ => {
       error make $"not a build"
@@ -89,17 +124,18 @@ export def 'main build' [build: path@builds, hostname: string] {
   }
 }
 
-export def 'main build unattend' [build: path@builds, cfg: record<hostname: string>]: nothing -> path {
+export def 'main build unattend' [build: path@builds, img: oneof<string,record>]: nothing -> path {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
   let state = init
+  let img = make_img $img
 
   let iso_file = match $build {
     $LAB_AD_MEMBER => {
         overlay use --prefix ./lab/ad/member 
-        member build_unattend $state $cfg
+        member build_unattend $state $img
     },
     _ => {
       error make $"not a build"

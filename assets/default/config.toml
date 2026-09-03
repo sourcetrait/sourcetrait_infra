@@ -1,0 +1,4 @@
+[key]
+home = "~/.ssh"
+lab_login = "id_lab_login"
+lab_dumb = "id_lab_dumb"
