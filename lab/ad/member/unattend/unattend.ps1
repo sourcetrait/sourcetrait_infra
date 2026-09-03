@@ -15,7 +15,7 @@ function step_virtio {
 
 function step_update {
     # install updates
-    Install-PSResource -Name PSWindowsUpdate -TrustRepository
+    Install-PSResource -Name PSWindowsUpdate -TrustRepository -Scope AllUsers
     Import-Module PSWindowsUpdate
     Install-WindowsUpdate -MicrosoftUpdate -AcceptAll -IgnoreReboot
 }
@@ -69,12 +69,15 @@ function step_choco_packages {
     }
 }
 
-function step_rust {
-    # msvc linker and windows sdk; rustup-init -y skips this offer
-    Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile "$env:TEMP\vs_BuildTools.exe"
+function step_vs {
+    # msvc linker and windows sdk from the latest stable build tools; rustup-init -y skips this offer
+    Invoke-WebRequest 'https://aka.ms/vs/stable/vs_buildtools.exe' -OutFile "$env:TEMP\vs_BuildTools.exe"
     $p = Start-Process "$env:TEMP\vs_BuildTools.exe" -ArgumentList '--quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended' -Wait -PassThru
+    "vs exit $($p.ExitCode)"
     if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit 3 }
+}
 
+function step_rust {
     # toolchains shared under RUSTUP_HOME, proxies global, each user keeps the default cargo home
     [Environment]::SetEnvironmentVariable('RUSTUP_HOME', 'C:\ProgramData\rustup', 'Machine')
     $env:RUSTUP_HOME = 'C:\ProgramData\rustup'
@@ -112,25 +115,23 @@ function step_sconfig {
 # step1: pwsh
 switch ($step) {
     2 {
-        step_virtio
         step_update
     }
     3 {
         step_sshd
         step_disk
+        step_defender
+    }
+    4 {
         step_choco
         step_nushell
     }
-    4 {
-        step_choco_packages
-    }
-    5 {
-        step_rust
-        step_defender
-    }
-    11 {
+    111 {
        step_net
-       step_sconfig
+       step_virtio
+       step_vs
+       step_rust
+       step_choco_packages
     }
     default {
         Write-Error "Unknown step: $step"
