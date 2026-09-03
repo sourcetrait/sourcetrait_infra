@@ -96,7 +96,6 @@ switch ($step) {
     3 {
         step_sshd
         step_disk
-        step_net
     }
     4 {
         step_choco
