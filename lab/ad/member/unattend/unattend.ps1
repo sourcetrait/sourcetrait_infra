@@ -26,10 +26,12 @@ function step_update {
     Install-WindowsUpdate -MicrosoftUpdate -AcceptAll -IgnoreReboot
 }
 
-function step_sshd {
+function step_net {
     # set network to private trust
     Set-NetConnectionProfile -NetworkCategory Private
+}
 
+function step_sshd {
     # install sshd
     Add-WindowsCapability -Online -Name OpenSSH.Server
     Set-Service -Name sshd -StartupType Automatic
@@ -79,9 +81,14 @@ function step_choco_packages {
     choco install git helix -y
 }
 
-function step_choco_packages {
+function step_defender {
     # uninstall defender
     Uninstall-WindowsFeature -Name Windows-Defender -Remove
+}
+
+function step_sconfig {
+    # disable sconfig on startup
+    Set-SConfig -AutoLaunch $false
 }
 
 # step1: pwsh
@@ -92,6 +99,7 @@ switch ($step) {
     3 {
         step_sshd
         step_disk
+        step_net
     }
     4 {
         step_choco
@@ -101,6 +109,7 @@ switch ($step) {
         step_nushell_default
         step_choco_packages
         step_defender
+        step_sconfig
     }
     default {
         Write-Error "Unknown step: $step"
