@@ -112,6 +112,16 @@ function step_sconfig {
     powershell -NoProfile -Command 'Set-SConfig -AutoLaunch $false'
 }
 
+function step_logon_count {
+    # windows adds one to LogonCount; zero it so the next boot needs a real logon
+    reg add 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' /v AutoLogonCount /t REG_DWORD /d 0 /f
+}
+
+function step_reboot {
+    # end the build rebooted; the script's remaining lines run before the reboot lands
+    shutdown /r /t 0
+}
+
 # step1: pwsh
 switch ($step) {
     2 {
