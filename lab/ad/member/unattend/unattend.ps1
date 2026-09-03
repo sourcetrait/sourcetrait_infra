@@ -27,10 +27,8 @@ function step_update {
 }
 
 function step_sshd {
-    wait_net
-
     # set network to private trust
-    Get-NetConnectionProfile | Set-NetConnectionProfile -NetworkCategory Private
+    Set-NetConnectionProfile -NetworkCategory Private
 
     # install sshd
     Add-WindowsCapability -Online -Name OpenSSH.Server
