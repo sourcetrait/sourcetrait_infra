@@ -75,10 +75,13 @@ export def build_unattend [state: record, img: record]: nothing -> path {
   cp ($DIR_SELF | path join 'unattend' | path join 'unattend.ps1') $target_dir
 
   # copy keys
-  cp $state.path.key.lab_login_pub ($ssh_dir | path join 'id_lab_login.pub')
+  for lab_login in $state.path.key.lab_logins {
+    cp $lab_login $ssh_dir
+    open --raw $lab_login | save --append ($ssh_dir | path join 'authorized_keys')
+  }
+
   cp $state.path.key.lab_dumb ($ssh_dir | path join 'id_lab_dumb')
   cp $state.path.key.lab_dumb_pub ($ssh_dir | path join 'id_lab_dumb.pub')
-  open --raw $state.path.key.lab_login_pub | save ($ssh_dir | path join 'authorized_keys')
   chown -R ($env.USER):($env.USER) $ssh_dir
   chmod 400 ($"($ssh_dir)/*" | into glob)
   chmod 600 ($ssh_dir | path join 'authorized_keys')

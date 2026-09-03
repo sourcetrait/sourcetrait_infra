@@ -23,9 +23,23 @@ def init [] {
   }
 
   let cfg = open ($config_dir | path join 'config.toml')
-  if not ($cfg.key.home | path join $"($cfg.key.lab_login).pub" | path exists) {
-    error make $"lab login pub key does not exist: ($cfg.key.home | path join $"($cfg.key.lab_login).pub")"
-  } else if not ($cfg.key.home | path join $cfg.key.lab_dumb | path exists) {
+  
+  mut lab_login_pubkeys = []
+  for lab_key in $cfg.key.lab_logins {
+    let pubkey = ($cfg.key.home | path join $"($lab_key).pub" | path expand)
+    if not ($pubkey | path exists) {
+      error make $"lab login pub key does not exist: ($pubkey)"
+    }
+
+    $lab_login_pubkeys = $lab_login_pubkeys | append $pubkey
+  }
+
+  if ($lab_login_pubkeys | is-empty) {
+    error make $"no lab login pubkeys configured"
+  }
+  
+  # dumb keys exist so that there's at least one usable signing key available on startup; completely untrustable
+  if not ($cfg.key.home | path join $cfg.key.lab_dumb | path exists) {
     error make $"dumb lab key does not exist: ($cfg.key.home | path join $cfg.key.lab_dumb)"
   } else if not ($cfg.key.home | path join $"($cfg.key.lab_dumb).pub" | path exists) {
     error make $"dumb lab pubkey does not exist: ($cfg.key.home | path join $"($cfg.key.lab_dumb).pub")"
@@ -41,7 +55,7 @@ def init [] {
         virtio_win_iso: '/mnt/storage/kvm/iso/virtio-win.iso'
       },
       key: {
-        lab_login_pub: ($cfg.key.home | path join $"($cfg.key.lab_login).pub" | path expand)
+        lab_logins: $lab_login_pubkeys
         lab_dumb: ($cfg.key.home | path join $cfg.key.lab_dumb | path expand)
         lab_dumb_pub: ($cfg.key.home | path join $"($cfg.key.lab_dumb).pub" | path expand)
       }
