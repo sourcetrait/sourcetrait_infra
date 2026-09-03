@@ -64,12 +64,19 @@ export def 'main debug unattend' [build: path@builds, cfg: record<hostname: stri
   print $xml
 }
 
-export def 'main build' [build: path@builds, cfg: record<hostnamename: string>] {
+def make_cfg [hostname: string]: nothing -> record<hostname: string> {
+  {
+    hostname: $hostname
+  }
+}
+
+export def 'main build' [build: path@builds, hostname: string] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
   let state = init
+  let cfg = make_cfg $hostname
 
   match $build {
     $LAB_AD_MEMBER => {

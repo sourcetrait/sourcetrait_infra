@@ -108,17 +108,27 @@
       <RunSynchronous>
         <RunSynchronousCommand wcm:action="add">
           <Order>1</Order>
-          <Path>powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_1.ps1</Path>
+          <Path>powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_pwsh.ps1 *&gt; C:\Windows\Temp\unattend_1.log</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
         <RunSynchronousCommand wcm:action="add">
           <Order>2</Order>
-          <Path>powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_2.ps1</Path>
+          <Path>pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 2 *&gt; C:\Windows\Temp\unattend_2.log</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
         <RunSynchronousCommand wcm:action="add">
           <Order>3</Order>
-          <Path>pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 3</Path>
+          <Path>pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 3 *&gt; C:\Windows\Temp\unattend_3.log</Path>
+          <WillReboot>Always</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Path>pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 4 *&gt; C:\Windows\Temp\unattend_4.log</Path>
+          <WillReboot>Always</WillReboot>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Path>pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 5 *&gt; C:\Windows\Temp\unattend_5.log</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
       </RunSynchronous>

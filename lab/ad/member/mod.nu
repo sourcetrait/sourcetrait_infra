@@ -1,5 +1,5 @@
 
-export def build [state: record, cfg: record<hostname: string>] {
+export def build [state: record, cfg: record] {
   let unattend_iso = (build_unattend $state $cfg)
   (virt-install
     --name ($cfg.hostname)
@@ -47,13 +47,13 @@ export def debug_build [state: record, cfg: record<hostname: string>] {
   )
 }
 
-export def debug_unattend [state: record, cfg: record<hostname: string>]: nothing -> string {
+export def debug_unattend [state: record, cfg: record]: nothing -> string {
   const DIR_SELF: directory = path self .
   open ($DIR_SELF | path join 'autounattend.xml.liquid')
     | from grimoire liquid $cfg
 }
 
-export def build_unattend [state: record, cfg: record<hostname: string>]: nothing -> path {
+export def build_unattend [state: record, cfg: record]: nothing -> path {
   const DIR_SELF: directory = path self .
   let tmp_dir = (mktemp -d .infra-unattend.XXXXXX)
   let target_dir = ($tmp_dir | path join 'target')
@@ -63,6 +63,8 @@ export def build_unattend [state: record, cfg: record<hostname: string>]: nothin
     | from grimoire liquid $cfg
     | save ($target_dir | path join 'autounattend.xml')
 
+  cp ($DIR_SELF | path join 'unattend' | path join 'unattend_pwsh.ps1') $target_dir
+  cp ($DIR_SELF | path join 'unattend' | path join 'unattend.ps1') $target_dir
   xorriso -as mkisofs -o $iso_file -V UNATTEND -J -r $target_dir
 
   let unattend_dir = ($state.path.vm.unattend_dir | path join ($cfg.hostname))
