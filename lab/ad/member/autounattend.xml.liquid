@@ -147,7 +147,6 @@
         <HideLocalAccountScreen>true</HideLocalAccountScreen>
         <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
         <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
-        <NetworkLocation>Work</NetworkLocation>
         <ProtectYourPC>3</ProtectYourPC>
       </OOBE>
 
@@ -159,6 +158,32 @@
       </UserAccounts>
 
       <TimeZone>UTC</TimeZone>
+
+      <AutoLogon>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Username>Administrator</Username>
+        <Password>
+          <Value>sourceTr@1t</Value>
+          <PlainText>true</PlainText>
+        </Password>
+      </AutoLogon>
+
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>network private</Description>
+          <RequiresUserInput>false</RequiresUserInput>
+          <CommandLine>cmd.exe /c "pwsh -NoProfile -ExecutionPolicy Bypass -File E:\unattend.ps1 6 1&gt;C:\Windows\Temp\unattend_6.log 2&gt;&amp;1"</CommandLine>
+        </SynchronousCommand>
+        <SynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>stop autologon</Description>
+          <RequiresUserInput>false</RequiresUserInput>
+          <CommandLine>reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoLogonCount /t REG_DWORD /d 0 /f</CommandLine>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+
     </component>
   </settings>
 

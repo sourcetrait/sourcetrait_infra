@@ -7,15 +7,6 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-PSDebug -Trace 1
 
-# wait for the network adapter (nla service) to come online
-function wait_net {
-    if ((Get-Service NlaSvc).Status -ne 'Running') {
-        Start-Service NlaSvc
-    }
-
-    Start-Sleep 60
-}
-
 function step_update {
     # install updates
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072
@@ -24,11 +15,6 @@ function step_update {
     Install-Module -Name PSWindowsUpdate -Force -AllowClobber
     Import-Module PSWindowsUpdate
     Install-WindowsUpdate -MicrosoftUpdate -AcceptAll -IgnoreReboot
-}
-
-function step_net {
-    # set network to private trust
-    Set-NetConnectionProfile -NetworkCategory Private
 }
 
 function step_sshd {
@@ -91,6 +77,17 @@ function step_sconfig {
     Set-SConfig -AutoLaunch $false
 }
 
+function step_net {
+    # nla classifies the network on the first full boot; wait for the profile
+    $deadline = (Get-Date).AddMinutes(2)
+    while (-not (Get-NetConnectionProfile -ErrorAction SilentlyContinue)) {
+        if ((Get-Date) -gt $deadline) { throw 'no network profile after 5 min' }
+        Start-Sleep 2
+    }
+
+    Set-NetConnectionProfile -NetworkCategory Private    # set network to private trust
+}
+
 # step1: pwsh
 switch ($step) {
     2 {
@@ -110,6 +107,9 @@ switch ($step) {
         step_choco_packages
         step_defender
         step_sconfig
+    }
+    6 {
+       step_net
     }
     default {
         Write-Error "Unknown step: $step"
