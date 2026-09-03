@@ -64,9 +64,14 @@ function step_nushell_default {
     Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command nu).Source
 }
 
+$CHOCO_PACKAGES = @( 'git' 'helix' )
+
 function step_choco_packages {
-    # install choco packages
-    choco install git helix -y
+    $PSNativeCommandUseErrorActionPreference = $false
+    foreach ($pkg in $CHOCO_PACKAGES) {
+        choco install $pkg -y
+        "choco $pkg exit $LASTEXITCODE"
+    }
 }
 
 function step_rust {
@@ -122,13 +127,15 @@ switch ($step) {
         step_nushell
     }
     4 {
-        step_nushell_default
         step_choco_packages
+    }
+    5 {
+        step_nushell_default
         step_rust
         step_defender
         step_sconfig
     }
-    5 {
+    11 {
        step_net
     }
     default {
