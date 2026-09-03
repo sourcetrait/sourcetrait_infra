@@ -7,12 +7,15 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-PSDebug -Trace 1
 
+function step_virtio {
+    # install the virtio drivers and the qemu guest agent from the attached iso
+    $p = Start-Process 'F:\virtio-win-guest-tools.exe' -ArgumentList '/install /quiet /norestart /log C:\Windows\Temp\virtio_win.log' -Wait -PassThru
+    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit 3 }
+}
+
 function step_update {
     # install updates
-    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-    Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    Install-Module -Name PSWindowsUpdate -Force -AllowClobber
+    Install-PSResource -Name PSWindowsUpdate -TrustRepository
     Import-Module PSWindowsUpdate
     Install-WindowsUpdate -MicrosoftUpdate -AcceptAll -IgnoreReboot
 }
@@ -24,7 +27,7 @@ function step_sshd {
     Start-Service sshd
 
     # configure powershell as the default for ssh logins (replaced by nu later)
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command pwsh).Source -PropertyType String -Force | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command pwsh).Source
 }
 
 function step_disk {
@@ -42,8 +45,7 @@ function step_disk {
 
 function step_choco {
     # install choco
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    Invoke-Expression (Invoke-RestMethod 'https://community.chocolatey.org/install.ps1')
 }
 
 function step_nushell {
@@ -52,14 +54,14 @@ function step_nushell {
     $url = ($rel.assets | Where-Object name -like 'nu-*-x86_64-pc-windows-msvc.msi').browser_download_url
     $dst = "$env:TEMP\nushell.msi"
     Invoke-WebRequest -Uri $url -OutFile $dst
-    $p = Start-Process msiexec.exe -ArgumentList "/i `"$dst`" /qn /norestart" -Wait -PassThru
+    $p = Start-Process msiexec.exe -ArgumentList "/i `"$dst`" ALLUSERS=1 /norestart" -Wait -PassThru
     if ($p.ExitCode -ne 0) { exit 3 }
 
 }
 
 function step_nushell_default {
     # configure nushell as the default for ssh logins
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command nu).Source -PropertyType String -Force | Out-Null
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Get-Command nu).Source
 }
 
 function step_choco_packages {
@@ -67,14 +69,28 @@ function step_choco_packages {
     choco install git helix -y
 }
 
+function step_rust {
+    # msvc linker and windows sdk; rustup-init -y skips this offer
+    Invoke-WebRequest 'https://aka.ms/vs/17/release/vs_BuildTools.exe' -OutFile "$env:TEMP\vs_BuildTools.exe"
+    $p = Start-Process "$env:TEMP\vs_BuildTools.exe" -ArgumentList '--quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended' -Wait -PassThru
+    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit 3 }
+
+    # toolchains shared under RUSTUP_HOME, proxies global, each user keeps the default cargo home
+    [Environment]::SetEnvironmentVariable('RUSTUP_HOME', 'C:\ProgramData\rustup', 'Machine')
+    $env:RUSTUP_HOME = 'C:\ProgramData\rustup'
+    $env:CARGO_HOME = 'C:\ProgramData\cargo'
+    Invoke-WebRequest 'https://win.rustup.rs/x86_64' -OutFile "$env:TEMP\rustup-init.exe"
+    $p = Start-Process "$env:TEMP\rustup-init.exe" -ArgumentList '-y --no-modify-path --default-toolchain stable --profile default' -Wait -PassThru
+    if ($p.ExitCode -ne 0) { exit 3 }
+    & 'C:\ProgramData\cargo\bin\rustup.exe' set auto-self-update disable
+
+    $path = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+    [Environment]::SetEnvironmentVariable('Path', $path.TrimEnd(';') + ';C:\ProgramData\cargo\bin', 'Machine')
+}
+
 function step_defender {
     # uninstall defender
     Uninstall-WindowsFeature -Name Windows-Defender -Remove
-}
-
-function step_sconfig {
-    # disable sconfig on startup
-    Set-SConfig -AutoLaunch $false
 }
 
 function step_net {
@@ -88,9 +104,15 @@ function step_net {
     Set-NetConnectionProfile -NetworkCategory Private    # set network to private trust
 }
 
+function step_sconfig {
+    # disable sconfig on startup
+    Set-SConfig -AutoLaunch $false
+}
+
 # step1: pwsh
 switch ($step) {
     2 {
+        step_virtio
         step_update
     }
     3 {
@@ -104,6 +126,7 @@ switch ($step) {
     5 {
         step_nushell_default
         step_choco_packages
+        step_rust
         step_defender
         step_sconfig
     }
@@ -116,4 +139,5 @@ switch ($step) {
     }
 }
 
+Write-Host "STEP $step DONE"
 exit 0
