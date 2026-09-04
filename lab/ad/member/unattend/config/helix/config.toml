@@ -1,0 +1,8 @@
+[editor]
+bufferline = "multiple"
+auto-pairs = false
+auto-format = false
+rulers = [80,120]
+
+[editor.lsp]
+auto-signature-help = false

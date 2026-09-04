@@ -74,8 +74,7 @@ export def build_unattend [state: record, img: record]: nothing -> path {
   $state.cfg.dumb_password | save ($target_dir | path join 'dumb_password')
 
   # copy unattended scripts
-  cp ($DIR_SELF | path join 'unattend' | path join 'unattend_pwsh.ps1') $target_dir
-  cp ($DIR_SELF | path join 'unattend' | path join 'unattend.ps1') $target_dir
+  cp -r ($DIR_SELF | path join 'unattend' '*' | into glob) $target_dir
 
   # copy keys
   for lab_login in $state.path.key.lab_logins {

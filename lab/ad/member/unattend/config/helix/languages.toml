@@ -1,0 +1,27 @@
+[[language]]
+name = "bash"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "html"
+indent = { tab-width = 2, unit = "  " }
+
+[[language]]
+name = "css"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "nu"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "nuon"
+scope = "source.nuon"
+file-types = ["nuon", "nuonl"]
+indent = { tab-width = 2, unit = "  " }
+
+[[language]]
+name = "quill"
+scope = "source.quill"
+file-types = ["quill"]
+indent = { tab-width = 2, unit = "  " }

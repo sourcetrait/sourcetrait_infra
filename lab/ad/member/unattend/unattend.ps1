@@ -104,7 +104,7 @@ function step_rust {
 }
 
 
-function step_user_dotsys {
+function step_user_usrlay {
     param(
         [Parameter(Mandatory)]
         [string]$user
@@ -116,16 +116,18 @@ function step_user_dotsys {
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
 
     $HOME_DIRS = @('.config','.sys','ai','bak','cab','data','doc','down','img','mdl','mnt','proj','repo','snd','sync','tmp','tpl','txt','vid','web')
-    $SYS_DIRS = @('cache','data','state','desk','local','bak','mnt','my','secret','srv')
-    $LOCAL_DIRS = @('bin','etc','lib','opt','var','share','src')
+    $SYS_DIRS = @('cache','data','state','desk','local','bak','hut','mnt','my','nu','secret','srv')
+    $SYS_NU_DIRS = @('bin','mod')
+    $LOCAL_DIRS = @('bin','etc','lib','opt','var','share','src','doc')
     $SECRET_DIRS = @('cache','data','state','my')
     $SRV_DIRS = @('git')
-    $MY_SYS_DIRS = @('exe','cfg','lib','data','data/stay','data/vary','doc','pkg','src')
+    $MY_SYS_DIRS = @('exe','cfg','lib','asset','data','doc','pkg','src')
     $MIX_DIRS = @('img/wall','img/pic','img/screen','img/scan','snd/music','vid/movie','txt/book','txt/paper','txt/guide','txt/ref','web/site','web/page','web/shot')
     $TPL_DIRS = @('img','snd','vid','mdl','ai','data','doc','proj','repo','cab')
 
     $DIRS = $HOME_DIRS +
         ($SYS_DIRS | ForEach-Object { ".sys\$_" }) +
+        ($SYS_NU_DIRS | ForEach-Object { ".sys\nu\$_" }) +
         ($LOCAL_DIRS | ForEach-Object { ".sys\local\$_" }) +
         ($SECRET_DIRS | ForEach-Object { ".sys\secret\$_" }) +
         ($SRV_DIRS | ForEach-Object { ".sys\srv\$_" }) +
@@ -141,11 +143,21 @@ function step_user_dotsys {
         icacls.exe "C:\Users\$user\$d" /setowner $user /t /c
     }
 
+    # setup ssh
     $ssh = "C:\Users\$user\.ssh"
     Copy-Item 'E:\.ssh' $ssh -Recurse
     Get-ChildItem $ssh -Recurse -File | ForEach-Object { $_.IsReadOnly = ($_.Name -ne 'authorized_keys') }
     icacls.exe $ssh /setowner $user /t /c
     icacls.exe $ssh /inheritance:r /grant "${user}:(OI)(CI)F" /grant 'SYSTEM:(OI)(CI)F'
+
+    # setup config
+    $config = "C:\Users\$user\.config"
+    Copy-Item 'E:\config' $config -Recurse
+    icacls.exe $config /setowner $user /t /c
+
+    # setup nushell
+    Copy-Item "$config\nushell\config.usrlay.nu" "$config\nushell\config.nu"
+    New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\nu\mod"
 }
 
 function step_defender {
@@ -188,10 +200,11 @@ function step_reboot {
 }
 
 function step_default_profile {
-    # new users get ~\.cargo\bin on their own path, via the default profile hive
     reg.exe load 'HKU\DefaultUser' 'C:\Users\Default\NTUSER.DAT'
+
     # PATH
-    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.cargo\bin' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.sys\hut\cargo\bin' /f
+
     # XDG_CONFIG_HOME
     reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CONFIG_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.config' /f
     # XDG_CACHE_HOME
@@ -200,10 +213,15 @@ function step_default_profile {
     reg.exe add 'HKU\DefaultUser\Environment' /v XDG_DATA_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\data' /f
     # XDG_STATE_HOME
     reg.exe add 'HKU\DefaultUser\Environment' /v XDG_STATE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\state' /f
+
     # UENV_USR_SPEC
-    reg.exe add 'HKU\DefaultUser\Environment' /v UENV_USR_SPEC /t REG_SZ /d 'dotsys' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v UENV_USR_SPEC /t REG_SZ /d 'usrlay' /f
+
     # CARGO_TARGET_DIR
     reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_TARGET_DIR /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache\cargo\target' /f
+    # CARGO_HOME
+    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\hut\cargo' /f
+
     reg.exe unload 'HKU\DefaultUser'
 }
 
@@ -224,7 +242,7 @@ switch ($step) {
        step_update
        step_net
        step_virtio
-       step_user_dotsys 'lab'
+       step_user_usrlay 'lab'
        step_vs
        step_rust
        step_choco_packages
