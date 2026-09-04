@@ -121,7 +121,7 @@ function step_user_dotsys {
     $SECRET_DIRS = @('cache','data','state','my')
     $SRV_DIRS = @('git')
     $MY_SYS_DIRS = @('exe','cfg','lib','data','data/stay','data/vary','doc','pkg','src')
-    $MIX_DIRS = @('img/wall','img/pic','img/screen','img/scan','snd/music','vid/movie','txt/book','txt/paper','txt/guide','txt/ref','web','web/site','web/page','web/shot')
+    $MIX_DIRS = @('img/wall','img/pic','img/screen','img/scan','snd/music','vid/movie','txt/book','txt/paper','txt/guide','txt/ref','web/site','web/page','web/shot')
     $TPL_DIRS = @('img','snd','vid','mdl','ai','data','doc','proj','repo','cab')
 
     $DIRS = $HOME_DIRS +
