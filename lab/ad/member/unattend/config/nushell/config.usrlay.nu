@@ -83,7 +83,7 @@ export module usrlay {
     }
 
     export def --env wrk [alias?: string]: nothing -> nothing {
-        let wrk = open ($nu.default-config-dir | path join 'nuon' 'usrlay' 'work.nuon')
+        let wrk: record<default: directory, dirs: table<aliases: list<string>, dir: directory>> = open ($nu.default-config-dir | path join 'nuon' 'usrlay' 'work.nuon')
 
         if ($alias | is-empty) {
             cd $wrk.default

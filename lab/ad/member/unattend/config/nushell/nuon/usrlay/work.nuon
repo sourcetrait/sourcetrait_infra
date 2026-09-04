@@ -1,6 +1,7 @@
 {
-  default: "~/proj",
+  default: '~/proj',
   dirs: [
     [aliases, dir];
+    [[proj], '~/proj']
   ]
 }
