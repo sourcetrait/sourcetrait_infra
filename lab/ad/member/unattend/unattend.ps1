@@ -38,8 +38,9 @@ function step_sshd {
 
 function step_winre {
     # disable recovery
+    $PSNativeCommandUseErrorActionPreference = $false
     reagentc /disable
-    if ($LASTEXITCODE -ne 0) {
+    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 2) {
         throw "Failed to disable WinRE: $LASTEXITCODE"
     }
 }
@@ -105,7 +106,7 @@ function step_rust {
 
 function step_user {
     param(
-        [Parameter(Mandator)]
+        [Parameter(Mandatory)]
         [string]$user
     )
     
@@ -117,7 +118,7 @@ function step_user {
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
 
     foreach ($d in $USER_DIRS) {
-        New-Item -ItemType Directory (Join-Path 'C:\Users\lab' $d) -Force
+        New-Item -ItemType Directory (Join-Path "C:\Users\$user" $d) -Force
     }
 
     icacls.exe "C:\Users\$user\.config" /setowner $user /t /c
