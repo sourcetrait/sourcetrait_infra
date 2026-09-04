@@ -147,6 +147,9 @@ function step_user_usrlay {
     Copy-Item "$config\nushell\config.usrlay.nu" "$config\nushell\config.nu"
     New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\nu\mod"
 
+    # setup helix (doesn't honor xdg config)
+    New-Item -ItemType SymbolicLink -Path "C:\Users\$user\AppData\Roaming\helix" -Target "$config\helix"
+
     foreach ($d in $HOME_DIRS) {
         icacls.exe "C:\Users\$user\$d" /setowner $user /t /c
     }
