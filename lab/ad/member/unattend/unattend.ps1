@@ -21,8 +21,8 @@ function step_update {
 }
 
 function step_sshd {
-    # install sshd
-    Add-WindowsCapability -Online -Name OpenSSH.Server
+    # setup sshd
+    #Add-WindowsCapability -Online -Name OpenSSH.Server
     Set-Service -Name sshd -StartupType Automatic
     Start-Service sshd
 
@@ -36,10 +36,15 @@ function step_sshd {
     Restart-Service sshd
 }
 
-function step_disk {
+function step_winre {
     # disable recovery
     reagentc /disable
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to disable WinRE: $LASTEXITCODE"
+    }
+}
 
+function step_disk {
     # delete the recovery partition
     $recovery_partition = Get-Partition -DiskNumber 0 | Where-Object Type -eq 'Recovery'
     Remove-Partition -DiskNumber 0 -PartitionNumber $recovery_partition.PartitionNumber -Confirm:$false
@@ -159,6 +164,7 @@ function step_default_profile {
 switch ($step) {
     2 {
         step_sshd
+        step_winre
         step_disk
         step_defender
         step_default_profile
@@ -177,6 +183,7 @@ switch ($step) {
        step_choco_packages
        step_sconfig
        step_ngen
+       step_winre
        step_logon_count
        step_reboot
     }
