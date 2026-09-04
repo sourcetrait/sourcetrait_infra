@@ -112,7 +112,7 @@ function step_user {
     
     $USER_DIRS = @('.config','.sys\cache','.sys\data','.sys\state')
 
-    # lab's profile does not exist until a logon; force one, then lay down its .ssh
+    # user's profile does not exist until a logon; force one, then lay down its .ssh
     $pw = ConvertTo-SecureString (Get-Content 'E:\dumb_password' -Raw).Trim() -AsPlainText -Force
     $cred = New-Object System.Management.Automation.PSCredential($user, $pw)
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
