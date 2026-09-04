@@ -67,7 +67,7 @@ def init [] {
   }
 }
 
-def make_img [img: oneof<string,record>]: nothing -> record<name: string, hostname: string> {
+def make_img [state: record, img: oneof<string,record>]: nothing -> record<name: string, hostname: string> {
   let img = match ($img | describe) {
     'string' => { name: $img },
     _ => $img,
@@ -76,6 +76,7 @@ def make_img [img: oneof<string,record>]: nothing -> record<name: string, hostna
   {
     name: $img.name
     hostname: ($img | get -o name | default $img.name)
+    dumb_password: $state.cfg.dumb_password
   }
 }
 
@@ -85,7 +86,7 @@ export def 'main debug build' [build: path@builds, img: oneof<string,record>] {
   }
 
   let state = init
-  let img = make_img $img
+  let img = make_img $state $img
 
   match $build {
     $LAB_AD_MEMBER => {
@@ -104,7 +105,7 @@ export def 'main debug unattend' [build: path@builds, img: oneof<string, record>
   }
 
   let state = init
-  let img = make_img $img
+  let img = make_img $state $img
 
   let xml = match $build {
     $LAB_AD_MEMBER => {
@@ -125,7 +126,7 @@ export def 'main build' [build: path@builds, img: oneof<string, record>] {
   }
 
   let state = init
-  let img = make_img $img
+  let img = make_img $state $img
 
   match $build {
     $LAB_AD_MEMBER => {
@@ -144,7 +145,7 @@ export def 'main build unattend' [build: path@builds, img: oneof<string,record>]
   }
 
   let state = init
-  let img = make_img $img
+  let img = make_img $state $img
 
   let iso_file = match $build {
     $LAB_AD_MEMBER => {

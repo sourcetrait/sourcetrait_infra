@@ -1,3 +1,5 @@
+dumb_password = "dumbP@assw0rd"
+
 [key]
 home = "~/.ssh"
 lab_dumb = "id_lab_dumb"
