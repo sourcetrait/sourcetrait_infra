@@ -104,25 +104,42 @@ function step_rust {
 }
 
 
-function step_user {
+function step_user_dotsys {
     param(
         [Parameter(Mandatory)]
         [string]$user
     )
     
-    $USER_DIRS = @('.config','.sys\cache','.sys\data','.sys\state')
-
     # user's profile does not exist until a logon; force one, then lay down its .ssh
     $pw = ConvertTo-SecureString (Get-Content 'E:\dumb_password' -Raw).Trim() -AsPlainText -Force
     $cred = New-Object System.Management.Automation.PSCredential($user, $pw)
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
 
-    foreach ($d in $USER_DIRS) {
+    $HOME_DIRS = @('.config','.sys','ai','bak','cab','data','doc','down','img','mdl','mnt','proj','repo','snd','sync','tmp','tpl','txt','vid','web')
+    $SYS_DIRS = @('cache','data','state','desk','local','bak','mnt','my','secret','srv')
+    $LOCAL_DIRS = @('bin','etc','lib','opt','var','share','src')
+    $SECRET_DIRS = @('cache','data','state','my')
+    $SRV_DIRS = @('git')
+    $MY_SYS_DIRS = @('exe','cfg','lib','data','data/stay','data/vary','doc','pkg','src')
+    $MIX_DIRS = @('img/wall','img/pic','img/screen','img/scan','snd/music','vid/movie','txt/book','txt/paper','txt/guide','txt/ref','web','web/site','web/page','web/shot')
+    $TPL_DIRS = @('img','snd','vid','mdl','ai','data','doc','proj','repo','cab')
+
+    $DIRS = $HOME_DIRS +
+        ($SYS_DIRS | ForEach-Object { ".sys\$_" }) +
+        ($LOCAL_DIRS | ForEach-Object { ".sys\local\$_" }) +
+        ($SECRET_DIRS | ForEach-Object { ".sys\secret\$_" }) +
+        ($SRV_DIRS | ForEach-Object { ".sys\srv\$_" }) +
+        ($MY_SYS_DIRS | ForEach-Object { ".sys\my\$_" }) +
+        $MIX_DIRS +
+        ($TPL_DIRS | ForEach-Object { "tpl\$_" })
+
+    foreach ($d in $DIRS) {
         New-Item -ItemType Directory (Join-Path "C:\Users\$user" $d) -Force
     }
 
-    icacls.exe "C:\Users\$user\.config" /setowner $user /t /c
-    icacls.exe "C:\Users\$user\.sys" /setowner $user /t /c
+    foreach ($d in $HOME_DIRS) {
+        icacls.exe "C:\Users\$user\$d" /setowner $user /t /c
+    }
 
     $ssh = "C:\Users\$user\.ssh"
     Copy-Item 'E:\.ssh' $ssh -Recurse
@@ -207,7 +224,7 @@ switch ($step) {
        step_update
        step_net
        step_virtio
-       step_user 'lab'
+       step_user_dotsys 'lab'
        step_vs
        step_rust
        step_choco_packages
