@@ -102,15 +102,31 @@ function step_rust {
     [Environment]::SetEnvironmentVariable('Path', $path.TrimEnd(';') + ';C:\ProgramData\cargo\bin', 'Machine')
 }
 
-function step_user_lab {
+
+function step_user {
+    param(
+        [Parameter(Mandator)]
+        [string]$user
+    )
+    
+    $USER_DIRS = @('.config','.sys\cache','.sys\data','.sys\state')
+
     # lab's profile does not exist until a logon; force one, then lay down its .ssh
     $pw = ConvertTo-SecureString (Get-Content 'E:\dumb_password' -Raw).Trim() -AsPlainText -Force
-    $cred = New-Object System.Management.Automation.PSCredential('lab', $pw)
+    $cred = New-Object System.Management.Automation.PSCredential($user, $pw)
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
-    $ssh = 'C:\Users\lab\.ssh'
+
+    foreach ($d in $USER_DIRS) {
+        New-Item -ItemType Directory (Join-Path 'C:\Users\lab' $d) -Force
+    }
+
+    icacls.exe "C:\Users\$user\.config" /setowner $user /t /c
+    icacls.exe "C:\Users\$user\.sys" /setowner $user /t /c
+
+    $ssh = "C:\Users\$user\.ssh"
     Copy-Item 'E:\.ssh' $ssh -Recurse
     Get-ChildItem $ssh -Recurse -File | ForEach-Object { $_.IsReadOnly = ($_.Name -ne 'authorized_keys') }
-    icacls.exe $ssh /setowner lab /t /c
+    icacls.exe $ssh /setowner $user /t /c
     icacls.exe $ssh /inheritance:r /grant 'lab:(OI)(CI)F' /grant 'SYSTEM:(OI)(CI)F'
 }
 
@@ -156,7 +172,20 @@ function step_reboot {
 function step_default_profile {
     # new users get ~\.cargo\bin on their own path, via the default profile hive
     reg.exe load 'HKU\DefaultUser' 'C:\Users\Default\NTUSER.DAT'
+    # PATH
     reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.cargo\bin' /f
+    # XDG_CONFIG_HOME
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CONFIG_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.config' /f
+    # XDG_CACHE_HOME
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CACHE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache' /f
+    # XDG_DATA_HOME
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_DATA_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\data' /f
+    # XDG_STATE_HOME
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_STATE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\state' /f
+    # UENV_USR_SPEC
+    reg.exe add 'HKU\DefaultUser\Environment' /v UENV_USR_SPEC /t REG_SZ /d 'dotsys' /f
+    # CARGO_TARGET_DIR
+    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_TARGET_DIR /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache\cargo\target' /f
     reg.exe unload 'HKU\DefaultUser'
 }
 
@@ -177,7 +206,7 @@ switch ($step) {
        step_update
        step_net
        step_virtio
-       step_user_lab
+       step_user 'lab'
        step_vs
        step_rust
        step_choco_packages
