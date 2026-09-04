@@ -115,7 +115,7 @@ function step_user_usrlay {
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
 
     $HOME_DIRS = @('.config','.sys','ai','bak','cab','data','doc','down','img','mdl','mnt','proj','repo','snd','sync','tmp','tpl','txt','vid','web')
-    $SYS_DIRS = @('cache','data','state','desk','local','bak','hut','mnt','my','nu','secret','srv')
+    $SYS_DIRS = @('cache','data','state','desk','local','bak','hut','mnt','my','of','secret','srv')
     $SYS_NU_DIRS = @('bin','mod')
     $LOCAL_DIRS = @('bin','etc','lib','opt','var','share','src','doc')
     $SECRET_DIRS = @('cache','data','state','my')
@@ -126,7 +126,7 @@ function step_user_usrlay {
 
     $DIRS = $HOME_DIRS +
         ($SYS_DIRS | ForEach-Object { ".sys\$_" }) +
-        ($SYS_NU_DIRS | ForEach-Object { ".sys\nu\$_" }) +
+        ($SYS_NU_DIRS | ForEach-Object { ".sys\of\nu\$_" }) +
         ($LOCAL_DIRS | ForEach-Object { ".sys\local\$_" }) +
         ($SECRET_DIRS | ForEach-Object { ".sys\secret\$_" }) +
         ($SRV_DIRS | ForEach-Object { ".sys\srv\$_" }) +
@@ -144,7 +144,8 @@ function step_user_usrlay {
 
     # setup nushell
     Copy-Item "$config\nushell\config.usrlay.nu" "$config\nushell\config.nu"
-    New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\nu\mod"
+    New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\of\nu\mod"
+    register_nu_plugins $cred $user
 
     # setup helix (doesn't honor xdg config)
     New-Item -ItemType SymbolicLink -Path "C:\Users\$user\AppData\Roaming\helix" -Target "$config\helix"
@@ -159,7 +160,79 @@ function step_user_usrlay {
     Get-ChildItem $ssh -Recurse -File | ForEach-Object { $_.IsReadOnly = ($_.Name -ne 'authorized_keys') }
     icacls.exe $ssh /setowner $user /t /c
     icacls.exe $ssh /inheritance:r /grant "${user}:(OI)(CI)F" /grant 'SYSTEM:(OI)(CI)F'
+}
 
+function register_nu_plugins {
+    param(
+      [Parameter(Mandatory)]
+      [System.Management.Automation.PSCredential]$cred,
+
+      [Parameter(Mandatory)]
+      [string]$user
+    )
+
+    $user_root = Join-Path 'C:\Users' $user
+    $nu_dir = 'C:\Program Files\nu\bin'
+    $nu = Join-Path $nu_dir 'nu.exe'
+    $plugin_registry = Join-Path $user_root '.config\nushell\plugin.msgpackz'
+
+    $plugins = @(
+      Get-ChildItem $nu_dir -Filter 'nu_plugin_*.exe' -File |
+          Sort-Object Name
+    )
+
+    if ($plugins.Count -eq 0) {
+      throw "No Nushell plugins found in $nu_dir"
+    }
+
+    $run_id = [guid]::NewGuid().ToString('N')
+    $temporary_dir = Join-Path $user_root 'tmp'
+    $plugin_script = Join-Path $temporary_dir "register-plugins-$run_id.nu"
+    $plugin_stdout = Join-Path $temporary_dir "register-plugins-$run_id.stdout"
+    $plugin_stderr = Join-Path $temporary_dir "register-plugins-$run_id.stderr"
+
+    $plugin_lines = foreach ($plugin in $plugins) {
+      $plugin_literal = ConvertTo-Json -InputObject $plugin.FullName -Compress
+      "plugin add $plugin_literal"
+    }
+
+    $plugin_lines | Set-Content $plugin_script -Encoding utf8
+
+    try {
+      $p = Start-Process `
+          -FilePath $nu `
+          -ArgumentList @(
+              '--no-config-file',
+              '--plugin-config',
+              "`"$plugin_registry`"",
+              "`"$plugin_script`""
+          ) `
+          -Credential $cred `
+          -LoadUserProfile `
+          -WorkingDirectory $user_root `
+          -WindowStyle Hidden `
+          -RedirectStandardOutput $plugin_stdout `
+          -RedirectStandardError $plugin_stderr `
+          -Wait `
+          -PassThru
+
+      if ($p.ExitCode -ne 0) {
+          $detail = if (Test-Path $plugin_stderr) {
+              Get-Content $plugin_stderr -Raw
+          }
+
+          throw "Nushell plugin registration failed ($($p.ExitCode)): $detail"
+      }
+
+      Write-Host "Registered $($plugins.Count) Nushell plugins for $user"
+    }
+    finally {
+      Remove-Item -LiteralPath @(
+          $plugin_script,
+          $plugin_stdout,
+          $plugin_stderr
+      ) -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function step_defender {
@@ -222,7 +295,7 @@ function step_default_profile {
     # CARGO_TARGET_DIR
     reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_TARGET_DIR /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache\cargo\target' /f
     # CARGO_HOME
-    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\hut\cargo' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\of\cargo' /f
 
     reg.exe unload 'HKU\DefaultUser'
 }

@@ -1,14 +1,14 @@
 ##
 # We attempt to keep dot-files out of ~/ and place them somewhere in ~/.sys.
 # 
-# Anything outside of to the XDG or UENV spec: ~/.sys/hut.
+# Anything outside of to the XDG or UENV spec: ~/.sys/of.
 ###
 
 # setup default env path to point at the app/bin and at cargo's bin
 $env.PATH = ($env.PATH | append [
     ($nu.home-dir | path join '.sys/local/bin')
-    ($nu.home-dir | path join '.sys/hut/cargo/bin')
-    ($nu.home-dir | path join '.sys/nu/bin')
+    ($nu.home-dir | path join '.sys/of/cargo/bin')
+    ($nu.home-dir | path join '.sys/of/nu/bin')
     ($nu.home-dir | path join '.sys/my/exe')
 ])
 
