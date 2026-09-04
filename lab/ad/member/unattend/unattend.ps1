@@ -202,7 +202,6 @@ function register_nu_plugins {
       $p = Start-Process `
           -FilePath $nu `
           -ArgumentList @(
-              '--no-config-file',
               '--plugin-config',
               "`"$plugin_registry`"",
               "`"$plugin_script`""
