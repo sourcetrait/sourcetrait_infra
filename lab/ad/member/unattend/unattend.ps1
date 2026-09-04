@@ -105,8 +105,8 @@ function step_user_lab {
     $ssh = 'C:\Users\lab\.ssh'
     Copy-Item 'E:\.ssh' $ssh -Recurse
     Get-ChildItem $ssh -Recurse -File | ForEach-Object { $_.IsReadOnly = ($_.Name -ne 'authorized_keys') }
-    icacls.exe $ssh /setowner lab
-    icacls.exe $ssh /inheritance:r /grant 'lab:(OI)(CI)F' /grant 'SYSTEM:(OI)(CI)F' /t /c
+    icacls.exe $ssh /setowner lab /t /c
+    icacls.exe $ssh /inheritance:r /grant 'lab:(OI)(CI)F' /grant 'SYSTEM:(OI)(CI)F'
 }
 
 function step_defender {
