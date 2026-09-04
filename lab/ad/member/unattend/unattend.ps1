@@ -115,7 +115,7 @@ function step_user_usrlay {
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
 
     $HOME_DIRS = @('.config','.sys','ai','bak','cab','data','doc','down','img','mdl','mnt','proj','repo','snd','sync','tmp','tpl','txt','vid','web')
-    $SYS_DIRS = @('cache','data','state','desk','local','bak','hut','mnt','my','of','secret','srv')
+    $SYS_DIRS = @('cache','data','state','desk','local','bak','mnt','my','of','secret','srv')
     $SYS_NU_DIRS = @('bin','mod')
     $LOCAL_DIRS = @('bin','etc','lib','opt','var','share','src','doc')
     $SECRET_DIRS = @('cache','data','state','my')
@@ -278,7 +278,7 @@ function step_default_profile {
     reg.exe load 'HKU\DefaultUser' 'C:\Users\Default\NTUSER.DAT'
 
     # PATH
-    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.sys\hut\cargo\bin' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.sys\of\cargo\bin' /f
 
     # XDG_CONFIG_HOME
     reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CONFIG_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.config' /f
