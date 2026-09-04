@@ -139,6 +139,14 @@ function step_user_usrlay {
         New-Item -ItemType Directory (Join-Path "C:\Users\$user" $d) -Force
     }
 
+    # setup config
+    $config = "C:\Users\$user\.config"
+    Copy-Item 'E:\config\*' $config -Recurse
+
+    # setup nushell
+    Copy-Item "$config\nushell\config.usrlay.nu" "$config\nushell\config.nu"
+    New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\nu\mod"
+
     foreach ($d in $HOME_DIRS) {
         icacls.exe "C:\Users\$user\$d" /setowner $user /t /c
     }
@@ -150,14 +158,6 @@ function step_user_usrlay {
     icacls.exe $ssh /setowner $user /t /c
     icacls.exe $ssh /inheritance:r /grant "${user}:(OI)(CI)F" /grant 'SYSTEM:(OI)(CI)F'
 
-    # setup config
-    $config = "C:\Users\$user\.config"
-    Copy-Item 'E:\config' $config -Recurse
-    icacls.exe $config /setowner $user /t /c
-
-    # setup nushell
-    Copy-Item "$config\nushell\config.usrlay.nu" "$config\nushell\config.nu"
-    New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\nu\mod"
 }
 
 function step_defender {

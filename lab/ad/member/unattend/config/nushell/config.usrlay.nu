@@ -6,30 +6,30 @@
 
 # setup default env path to point at the app/bin and at cargo's bin
 $env.PATH = ($env.PATH | append [
-    ($env.HOME | path join '.sys/local/bin')
-    ($env.HOME | path join '.sys/hut/cargo/bin')
-    ($env.HOME | path join '.sys/nu/bin')
-    ($env.HOME | path join '.sys/my/exe')
+    ($nu.home-dir | path join '.sys/local/bin')
+    ($nu.home-dir | path join '.sys/hut/cargo/bin')
+    ($nu.home-dir | path join '.sys/nu/bin')
+    ($nu.home-dir | path join '.sys/my/exe')
 ])
 
 $env.UENV_USR_SPEC = "usrlay"
 
-$env.XDG_CACHE_HOME = ($env.HOME | path join '.sys/cache')
-$env.XDG_CONFIG_HOME = ($env.HOME | path join '.config')
-$env.XDG_DATA_HOME = ($env.HOME | path join '.sys/data')
-$env.XDG_STATE_HOME = ($env.HOME | path join '.sys/state')
+$env.XDG_CACHE_HOME = ($nu.home-dir | path join '.sys/cache')
+$env.XDG_CONFIG_HOME = ($nu.home-dir | path join '.config')
+$env.XDG_DATA_HOME = ($nu.home-dir | path join '.sys/data')
+$env.XDG_STATE_HOME = ($nu.home-dir | path join '.sys/state')
 
-$env.UENV_USR_CACHE = ($env.HOME | path join '.sys/cache')
-$env.UENV_USR_CONFIG = ($env.HOME | path join '.config')
-$env.UENV_USR_DATA = ($env.HOME | path join '.sys/data')
-$env.UENV_USR_STATE = ($env.HOME | path join '.sys/state')
-$env.UENV_USR_TEMPORARY = ($env.HOME | path join 'tmp')
-$env.UENV_USR_EXECUTE = ($env.HOME | path join '.sys/local/bin')
-$env.UENV_USR_LIBRARY = ($env.HOME | path join '.sys/local/lib')
-$env.UENV_USR_CONFIGURATION = ($env.HOME | path join '.sys/local/etc')
-$env.UENV_USR_ASSET   = ($env.HOME | path join '.sys/local/share')
-$env.UENV_USR_PACKAGE = ($env.HOME | path join '.sys/local/opt')
-$env.UENV_USR_VARIABLE = ($env.HOME | path join '.sys/local/var')
+$env.UENV_USR_CACHE = ($nu.home-dir | path join '.sys/cache')
+$env.UENV_USR_CONFIG = ($nu.home-dir | path join '.config')
+$env.UENV_USR_DATA = ($nu.home-dir | path join '.sys/data')
+$env.UENV_USR_STATE = ($nu.home-dir | path join '.sys/state')
+$env.UENV_USR_TEMPORARY = ($nu.home-dir | path join 'tmp')
+$env.UENV_USR_EXECUTE = ($nu.home-dir | path join '.sys/local/bin')
+$env.UENV_USR_LIBRARY = ($nu.home-dir | path join '.sys/local/lib')
+$env.UENV_USR_CONFIGURATION = ($nu.home-dir | path join '.sys/local/etc')
+$env.UENV_USR_ASSET   = ($nu.home-dir | path join '.sys/local/share')
+$env.UENV_USR_PACKAGE = ($nu.home-dir | path join '.sys/local/opt')
+$env.UENV_USR_VARIABLE = ($nu.home-dir | path join '.sys/local/var')
 
 $env.config.show_banner = false
 
@@ -48,7 +48,9 @@ $env.COLORTERM = "truecolor"
 # defualt editor is helix
 $env.EDITOR = "hx"
 
-umask rwxr-x--- | ignore
+if $nu.os-info.family == 'unix' {
+    umask rwxr-x--- | ignore 
+}
 
 alias raw = open --raw
 
@@ -113,7 +115,7 @@ export module usrlay {
 
 export module usrlay_prompt {
     export def dir []: nothing -> string {
-        let home = $env.HOME
+        let home = $nu.home-dir
         let pwd = $env.PWD
         if $pwd == $home { return "~" }
         if $pwd == "/" { return "/" }
@@ -145,7 +147,7 @@ export module usrlay_prompt {
 use usrlay *
 use usrlay_prompt
 
-$env.PROMPT_COMMAND       = {|| $"(ansi blue)($env.USER)(ansi grey)@(sys host | get hostname) (ansi green)(usrlay_prompt dir)(ansi purple)(usrlay_prompt branch)(ansi reset)" }
+$env.PROMPT_COMMAND       = {|| $"(ansi blue)(whoami)(ansi grey)@(sys host | get hostname) (ansi green)(usrlay_prompt dir)(ansi purple)(usrlay_prompt branch)(ansi reset)" }
 $env.PROMPT_INDICATOR     = {|| "> " }
 $env.PROMPT_COMMAND_RIGHT = {|| "" }
 
