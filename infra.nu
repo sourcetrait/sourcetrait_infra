@@ -13,8 +13,7 @@ export def builds []: nothing -> list<path> { BUILDS }
 const CONFIG_DIRNAME: directory = 'sourcetrait/infra'
 const INFRA_DIR: directory = path self .
 
-
-def init [] {
+def init [quick: bool = false] {
   let config_home = $env | get -o XDG_CONFIG_HOME | default ($env.HOME | path join '.config')
   let config_dir = $config_home | path join $CONFIG_DIRNAME
   if not ($config_dir | path exists) {
@@ -64,6 +63,7 @@ def init [] {
       vm: 'vmusr'
     },
     cfg: $cfg,
+    quick: $quick,
   }
 }
 
@@ -120,12 +120,12 @@ export def 'main debug unattend' [build: path@builds, img: oneof<string, record>
   print $xml
 }
 
-export def 'main build' [build: path@builds, img: oneof<string, record>] {
+export def 'main build' [build: path@builds, img: oneof<string, record>, --quick] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
-  let state = init
+  let state = init $quick
   let img = make_img $state $img
 
   match $build {
@@ -139,12 +139,12 @@ export def 'main build' [build: path@builds, img: oneof<string, record>] {
   }
 }
 
-export def 'main build unattend' [build: path@builds, img: oneof<string,record>]: nothing -> path {
+export def 'main build unattend' [build: path@builds, img: oneof<string,record>, --quick]: nothing -> path {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
-  let state = init
+  let state = init $quick
   let img = make_img $state $img
 
   let iso_file = match $build {

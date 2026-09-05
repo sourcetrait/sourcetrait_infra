@@ -70,8 +70,13 @@ export def build_unattend [state: record, img: record]: nothing -> path {
     | from grimoire liquid $img
     | save ($target_dir | path join 'autounattend.xml')
 
-  # copy dumb_password
-  $state.cfg.dumb_password | save ($target_dir | path join 'dumb_password')
+  # generate img.json
+  {
+      dumb_password: $state.cfg.dumb_password
+      quick: $state.quick
+  }
+  | to json
+  | save ($target_dir | path join 'img.json')
 
   # copy unattended scripts
   cp -r ($DIR_SELF | path join 'unattend' '*' | into glob) $target_dir

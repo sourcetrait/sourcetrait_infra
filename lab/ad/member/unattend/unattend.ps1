@@ -7,6 +7,19 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-PSDebug -Trace 1
 
+function read_img_json {
+    Get-Content -LiteralPath 'E:\img.json' -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+}
+
+function log_quick_skip {
+    param(
+        [Parameter(Mandatory)]
+        [string]$skipped
+    )
+
+    Write-Host "[UNATTEND] Quick skipped: $skipped"
+}
+
 function step_virtio {
     # install the virtio drivers and the qemu guest agent from the attached iso
     $p = Start-Process 'F:\virtio-win-guest-tools.exe' -ArgumentList '/install /quiet /norestart /log C:\Windows\Temp\virtio_win.log' -Wait -PassThru
@@ -14,6 +27,16 @@ function step_virtio {
 }
 
 function step_update {
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$img
+    )
+
+    if ($img.quick) {
+        log_quick_skip 'step_update'
+        return
+    }
+    
     # install updates
     Install-PSResource -Name PSWindowsUpdate -TrustRepository -Scope AllUsers
     Import-Module PSWindowsUpdate
@@ -105,12 +128,15 @@ function step_rust {
 
 function step_user_usrlay {
     param(
+        [Parameter(Mandatory, Position = 0)]
+        [pscustomobject]$img,
+
         [Parameter(Mandatory)]
         [string]$user
     )
     
     # user's profile does not exist until a logon; force one, then lay down its .ssh
-    $pw = ConvertTo-SecureString (Get-Content 'E:\dumb_password' -Raw).Trim() -AsPlainText -Force
+    $pw = ConvertTo-SecureString $img.dumb_password -AsPlainText -Force
     $cred = New-Object System.Management.Automation.PSCredential($user, $pw)
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
 
@@ -256,6 +282,16 @@ function step_sconfig {
 }
 
 function step_ngen {
+    param(
+        [Parameter(Mandatory)]
+        [pscustomobject]$img
+    )
+
+    if ($img.quick) {
+        log_quick_skip 'step_ngen'
+        return
+    }
+
     # compile the queued .net framework native images now, so the built system idles
     foreach ($root in 'Framework64', 'Framework') {
         $ngen = Get-ChildItem "$env:windir\Microsoft.NET\$root\v*\ngen.exe" | Sort-Object { [version]$_.Directory.Name.TrimStart('v') } | Select-Object -Last 1
@@ -299,7 +335,8 @@ function step_default_profile {
     reg.exe unload 'HKU\DefaultUser'
 }
 
-# step1: pwsh
+# main
+$img = read_img_json
 switch ($step) {
     2 {
         step_sshd
@@ -313,15 +350,15 @@ switch ($step) {
         step_nushell
     }
     111 {
-       step_update
+       step_update $img
        step_net
        step_virtio
-       step_user_usrlay 'lab'
+       step_user_usrlay $img 'lab'
        step_vs
        step_rust
        step_choco_packages
        step_sconfig
-       step_ngen
+       step_ngen $img
        step_winre
        step_logon_count
        step_reboot
