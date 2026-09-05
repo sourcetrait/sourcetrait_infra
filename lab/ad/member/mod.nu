@@ -78,7 +78,9 @@ export def build_unattend [state: record, img: record]: nothing -> path {
   | to json
   | save ($target_dir | path join 'img.json')
 
-  # copy unattended scripts
+  # copy usrlay config assets
+  cp -r ($state.path.usrlay_repo | path join 'config') ($target_dir | path join 'config')
+  # copy unattended assets
   cp -r ($DIR_SELF | path join 'unattend' '*' | into glob) $target_dir
 
   # copy keys

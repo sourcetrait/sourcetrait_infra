@@ -14,6 +14,11 @@ const CONFIG_DIRNAME: directory = 'sourcetrait/infra'
 const INFRA_DIR: directory = path self .
 
 def init [quick: bool = false] {
+  let usrlay_repo = $INFRA_DIR | path join 'extern/usrlay'
+  if not ($usrlay_repo | path join 'VERSION' | path exists) {
+    error make $"extern/usrlay does not exist"
+  }
+  
   let config_home = $env | get -o XDG_CONFIG_HOME | default ($env.HOME | path join '.config')
   let config_dir = $config_home | path join $CONFIG_DIRNAME
   if not ($config_dir | path exists) {
@@ -47,6 +52,7 @@ def init [quick: bool = false] {
   {
     path: {
       infra_dir: $INFRA_DIR
+      usrlay_repo: $usrlay_repo
       vm: {
         iso_dir: '/mnt/storage/kvm/iso'
         disk_dir: '/mnt/storage/kvm/disk'
