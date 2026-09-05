@@ -117,7 +117,7 @@ function step_rust {
     $env:RUSTUP_HOME = 'C:\ProgramData\rustup'
     $env:CARGO_HOME = 'C:\ProgramData\cargo'
     Invoke-WebRequest 'https://win.rustup.rs/x86_64' -OutFile "$env:TEMP\rustup-init.exe"
-    $p = Start-Process "$env:TEMP\rustup-init.exe" -ArgumentList '-y --no-modify-path --default-toolchain stable --profile default' -Wait -PassThru
+    $p = Start-Process "$env:TEMP\rustup-init.exe" -ArgumentList '-y --no-modify-path --default-toolchain stable --profile default --component rust-analyzer' -Wait -PassThru
     if ($p.ExitCode -ne 0) { exit 3 }
     & 'C:\ProgramData\cargo\bin\rustup.exe' set auto-self-update disable
 
