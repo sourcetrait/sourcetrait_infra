@@ -80,12 +80,12 @@ def make_img [state: record, img: oneof<string,record>]: nothing -> record<name:
   }
 }
 
-export def 'main debug build' [build: path@builds, img: oneof<string,record>] {
+export def 'main debug build' [build: path@builds, img: oneof<string,record>, --quick] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
-  let state = init
+  let state = init $quick
   let img = make_img $state $img
 
   match $build {
@@ -99,12 +99,12 @@ export def 'main debug build' [build: path@builds, img: oneof<string,record>] {
   }
 }
 
-export def 'main debug unattend' [build: path@builds, img: oneof<string, record>] {
+export def 'main debug unattend' [build: path@builds, img: oneof<string, record>, --quick] {
   if not ($build in $BUILDS) {
     error make $"not a build"
   }
 
-  let state = init
+  let state = init $quick
   let img = make_img $state $img
 
   let xml = match $build {

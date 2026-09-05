@@ -128,7 +128,7 @@ function step_rust {
 
 function step_user_usrlay {
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory)]
         [pscustomobject]$img,
 
         [Parameter(Mandatory)]
@@ -169,7 +169,6 @@ function step_user_usrlay {
     Copy-Item 'E:\config\*' $config -Recurse
 
     # setup nushell
-    Copy-Item "$config\nushell\config.usrlay.nu" "$config\nushell\config.nu"
     New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\of\nu\mod"
     register_nu_plugins $cred $user
 
