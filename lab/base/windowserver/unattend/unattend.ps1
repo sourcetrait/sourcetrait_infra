@@ -7,12 +7,30 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-PSDebug -Trace 1
 
-# Logging:
+# Log lines:
 # - '[UNATTEND] STEP BEGIN' 
 # - '[UNATTEND] STEP END'
 # - '[UNATTEND] SKIP' Something was skipped by configuration, typically 'quick'
 # - '[UNATTEND] ERROR'
 # - '[UNATTEND] ERROR STEP UNKNOWN' Unlikely to occur
+#
+# Handling:
+# - unattend.xml redirects all output to C:\Windows\Temp\unattend_{$step}.log
+# - break early. throw errors to break; they'll be logged.
+# - tracing does most of the logging work. manual on-success logging is usually unnecessary.
+# - to manually react to exit codes, temporarily set `$PSNativeCommandErrorActionPreference = $false`
+#   - otherwise, non-zero will break as intended by `$ErrorActionPreference = 'Stop'`
+# - post-install testing will ensure everything was set up correctly
+# - post-install cleanup will delete unattend logs and unmount iso drives
+#
+# Infra Development:
+# - use '--quick' from infra.nu to disable heavy operations like windows updates and manual pre-compilation
+#
+# Drives:
+# - 'C:' root
+# - 'D:' windows.iso
+# - 'E:' unattend.iso
+# - 'F:' virtio.iso
 
 function read_img_json {
     Get-Content -LiteralPath 'E:\img.json' -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
@@ -28,9 +46,14 @@ function log_quick_skip {
 }
 
 function step_virtio {
+    $virtio_exits = @(
+        0 # success
+        3010 # success, reboot required
+    )
+
     # install the virtio drivers and the qemu guest agent from the attached iso
     $p = Start-Process 'F:\virtio-win-guest-tools.exe' -ArgumentList '/install /quiet /norestart /log C:\Windows\Temp\virtio_win.log' -Wait -PassThru
-    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
+    if ($p.ExitCode -notin $virtio_exits) {
         throw '[UNATTEND] ERROR Failed to install virtio guest tools'
     }
 }
@@ -68,10 +91,15 @@ function step_sshd {
 }
 
 function step_winre {
+    $winre_exits = @(
+        0 # success
+        2 # tolerate, file not found; winre config may not exist 
+    )
+
     # disable recovery
     $PSNativeCommandUseErrorActionPreference = $false
     reagentc /disable
-    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 2) {
+    if ($LASTEXITCODE -notin $winre_exits) {
         throw "[UNATTEND] ERROR Failed to disable WinRE: exit($LASTEXITCODE)"
     }
 }
@@ -128,11 +156,15 @@ function step_choco_packages {
 }
 
 function step_vs {
+    $vs_exits = @(
+        0 # success
+        3010 # success, reboot required
+    )
+
     # msvc linker and windows sdk from the latest stable build tools; rustup-init -y skips this offer
     Invoke-WebRequest 'https://aka.ms/vs/stable/vs_buildtools.exe' -OutFile "$env:TEMP\vs_BuildTools.exe"
     $p = Start-Process "$env:TEMP\vs_BuildTools.exe" -ArgumentList '--quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended' -Wait -PassThru
-    "vs exit $($p.ExitCode)"
-    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
+    if ($p.ExitCode -notin $vs_exits) {
         throw '[UNATTEND] ERROR Failed to install VisualStudio build tools'
     }
 }
@@ -409,8 +441,7 @@ switch ($step) {
        step_reboot
     }
     default {
-        Write-Error "[UNATTEND] ERROR STEP UNKNOWN: $step"
-        exit 3
+        throw "[UNATTEND] ERROR STEP UNKNOWN: $step"
     }
 }
 
