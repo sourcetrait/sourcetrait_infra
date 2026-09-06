@@ -145,7 +145,6 @@ function step_nushell {
     if ($p.ExitCode -notin $nu_exits) {
         throw '[UNATTEND] ERROR Failed to install Nushell'
     }
-
 }
 
 $CHOCO_PACKAGES = @('git','helix')
