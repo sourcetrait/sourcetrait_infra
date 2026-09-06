@@ -15,10 +15,10 @@ Set-PSDebug -Trace 1
 # - '[UNATTEND] ERROR STEP UNKNOWN' Unlikely to occur
 #
 # Handling:
-# - unattend.xml redirects all output to C:\Windows\Temp\unattend_{$step}.log
+# - xml redirects all output to C:\Windows\Temp\unattend_{$step}.log
 # - break early. throw errors to break; they'll be logged.
 # - tracing does most of the logging work. manual on-success logging is usually unnecessary.
-# - to manually react to exit codes, temporarily set `$PSNativeCommandErrorActionPreference = $false`
+# - to manually react to exit codes, temporarily set `$PSNativeCommandUseErrorActionPreference = $false`
 #   - otherwise, non-zero will break as intended by `$ErrorActionPreference = 'Stop'`
 # - post-install testing will ensure everything was set up correctly
 # - post-install cleanup will delete unattend logs and unmount iso drives
@@ -36,10 +36,10 @@ Set-PSDebug -Trace 1
 # 1. latest PowerShell is installed first. this script relies on it.
 # 2-99. specialize pass; hardware / image. synchronous, in order.
 #       some integral services and environment are not fully available.
-#       xml forces reboot after each.
-# 111.  out-of-box-experience (oobe) system pass; first-logon.
+#       reboot stepping is available; xml uses WillReboot. resumes at next step.
+# 100+. out-of-box-experience (oobe) system pass; first-logon.
 #       effectively asynchronous and unordered.
-#       reboot is not available.
+#       reboot stepping is unavailable.
 #       integral services and environment are available.
 #       xml users exist.
 
@@ -131,13 +131,18 @@ function step_choco {
 }
 
 function step_nushell {
+    $nu_exits = @(
+        0 # success
+        3010 # success, reboot required
+    )
+    
     # install nushell
     $rel = Invoke-RestMethod 'https://api.github.com/repos/nushell/nushell/releases/latest'
     $url = ($rel.assets | Where-Object name -like 'nu-*-x86_64-pc-windows-msvc.msi').browser_download_url
     $dst = "$env:TEMP\nushell.msi"
     Invoke-WebRequest -Uri $url -OutFile $dst
     $p = Start-Process msiexec.exe -ArgumentList "/i `"$dst`" ALLUSERS=1 /qn /norestart" -Wait -PassThru
-    if ($p.ExitCode -ne 0) {
+    if ($p.ExitCode -notin $nu_exits) {
         throw '[UNATTEND] ERROR Failed to install Nushell'
     }
 
@@ -189,7 +194,7 @@ function step_rust {
 
     $p = Start-Process "$env:TEMP\rustup-init.exe" -ArgumentList '-y --no-modify-path --default-toolchain stable --profile default --component rust-analyzer' -Wait -PassThru
     if ($p.ExitCode -ne 0) {
-        throw "[UNATTEND] Failed to install Rust"
+        throw "[UNATTEND] ERROR Failed to install Rust"
     }
 
     & 'C:\ProgramData\cargo\bin\rustup.exe' set auto-self-update disable
