@@ -7,6 +7,13 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-PSDebug -Trace 1
 
+# Logging:
+# - '[UNATTEND] STEP BEGIN' 
+# - '[UNATTEND] STEP END'
+# - '[UNATTEND] SKIP' Something was skipped by configuration, typically 'quick'
+# - '[UNATTEND] ERROR'
+# - '[UNATTEND] ERROR STEP UNKNOWN' Unlikely to occur
+
 function read_img_json {
     Get-Content -LiteralPath 'E:\img.json' -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
 }
@@ -17,13 +24,15 @@ function log_quick_skip {
         [string]$skipped
     )
 
-    Write-Host "[UNATTEND] Quick skipped: $skipped"
+    Write-Host "[UNATTEND] SKIP Skipped: $skipped"
 }
 
 function step_virtio {
     # install the virtio drivers and the qemu guest agent from the attached iso
     $p = Start-Process 'F:\virtio-win-guest-tools.exe' -ArgumentList '/install /quiet /norestart /log C:\Windows\Temp\virtio_win.log' -Wait -PassThru
-    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit 3 }
+    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
+        throw '[UNATTEND] ERROR Failed to install virtio guest tools'
+    }
 }
 
 function step_update {
@@ -63,7 +72,7 @@ function step_winre {
     $PSNativeCommandUseErrorActionPreference = $false
     reagentc /disable
     if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 2) {
-        throw "Failed to disable WinRE: $LASTEXITCODE"
+        throw "[UNATTEND] ERROR Failed to disable WinRE: exit($LASTEXITCODE)"
     }
 }
 
@@ -89,17 +98,32 @@ function step_nushell {
     $dst = "$env:TEMP\nushell.msi"
     Invoke-WebRequest -Uri $url -OutFile $dst
     $p = Start-Process msiexec.exe -ArgumentList "/i `"$dst`" ALLUSERS=1 /qn /norestart" -Wait -PassThru
-    if ($p.ExitCode -ne 0) { exit 3 }
+    if ($p.ExitCode -ne 0) {
+        throw '[UNATTEND] ERROR Failed to install Nushell'
+    }
 
 }
 
 $CHOCO_PACKAGES = @('git','helix')
 
 function step_choco_packages {
-    $PSNativeCommandUseErrorActionPreference = $false
+    $choco_exits = @(
+        0 # success
+        1641 # success, reboot initiated
+        3010 # success, reboot required
+    )
+    
     foreach ($pkg in $CHOCO_PACKAGES) {
-        choco install $pkg -y
-        "choco $pkg exit $LASTEXITCODE"
+        try {
+            $PSNativeCommandUseErrorActionPreference = $false
+            choco install $pkg --yes --no-progress
+            $exitcode = $LASTEXITCODE
+        } finally {
+            $PSNativeCommandUseErrorActionPreference = $true
+        }
+        if ($exitcode -notin $choco_exits) {
+            throw "[UNATTEND] ERROR Chocolatey failed to install: $pkg"
+        }
     }
 }
 
@@ -108,7 +132,9 @@ function step_vs {
     Invoke-WebRequest 'https://aka.ms/vs/stable/vs_buildtools.exe' -OutFile "$env:TEMP\vs_BuildTools.exe"
     $p = Start-Process "$env:TEMP\vs_BuildTools.exe" -ArgumentList '--quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended' -Wait -PassThru
     "vs exit $($p.ExitCode)"
-    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit 3 }
+    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
+        throw '[UNATTEND] ERROR Failed to install VisualStudio build tools'
+    }
 }
 
 function step_rust {
@@ -117,8 +143,12 @@ function step_rust {
     $env:RUSTUP_HOME = 'C:\ProgramData\rustup'
     $env:CARGO_HOME = 'C:\ProgramData\cargo'
     Invoke-WebRequest 'https://win.rustup.rs/x86_64' -OutFile "$env:TEMP\rustup-init.exe"
+
     $p = Start-Process "$env:TEMP\rustup-init.exe" -ArgumentList '-y --no-modify-path --default-toolchain stable --profile default --component rust-analyzer' -Wait -PassThru
-    if ($p.ExitCode -ne 0) { exit 3 }
+    if ($p.ExitCode -ne 0) {
+        throw "[UNATTEND] Failed to install Rust"
+    }
+
     & 'C:\ProgramData\cargo\bin\rustup.exe' set auto-self-update disable
 
     $path = [Environment]::GetEnvironmentVariable('Path', 'Machine')
@@ -139,6 +169,9 @@ function step_user_usrlay {
     $pw = ConvertTo-SecureString $img.dumb_password -AsPlainText -Force
     $cred = New-Object System.Management.Automation.PSCredential($user, $pw)
     Start-Process cmd.exe -ArgumentList '/c exit' -Credential $cred -LoadUserProfile -WindowStyle Hidden -Wait
+
+    # disable password expiry
+    Set-LocalUser -Name $user -PasswordNeverExpires $true
 
     $HOME_DIRS = @('.config','.sys','ai','bak','cab','data','doc','down','img','mdl','mnt','proj','repo','snd','sync','tmp','tpl','txt','vid','web')
     $SYS_DIRS = @('cache','data','state','desk','local','bak','mnt','my','of','secret','srv')
@@ -207,7 +240,7 @@ function register_nu_plugins {
     )
 
     if ($plugins.Count -eq 0) {
-      throw "No Nushell plugins found in $nu_dir"
+      throw "[UNATTEND] ERROR Nushell plugins not found in: $nu_dir"
     }
 
     $run_id = [guid]::NewGuid().ToString('N')
@@ -245,10 +278,8 @@ function register_nu_plugins {
               Get-Content $plugin_stderr -Raw
           }
 
-          throw "Nushell plugin registration failed ($($p.ExitCode)): $detail"
+          throw "[UNATTEND] ERROR Nushell plugin registration failed: ($($p.ExitCode)) : $detail"
       }
-
-      Write-Host "Registered $($plugins.Count) Nushell plugins for $user"
     }
     finally {
       Remove-Item -LiteralPath @(
@@ -268,7 +299,9 @@ function step_net {
     # nla classifies the network on the first full boot; wait for the profile
     $deadline = (Get-Date).AddMinutes(2)
     while (-not (Get-NetConnectionProfile -ErrorAction SilentlyContinue)) {
-        if ((Get-Date) -gt $deadline) { throw 'no network profile after timeout' }
+        if ((Get-Date) -gt $deadline) {
+            throw '[UNATTEND] ERROR Network profile not found after timeout'
+        }
         Start-Sleep 2
     }
 
@@ -334,7 +367,19 @@ function step_default_profile {
     reg.exe unload 'HKU\DefaultUser'
 }
 
+function step_password_policy {
+    $PSNativeCommandUseErrorActionPreference = $false
+
+    & net.exe accounts /maxpwage:unlimited
+    if ($LASTEXITCODE -ne 0) {
+        throw '[UNATTEND] ERROR Failed to disable local password expiration'
+    }
+
+    Set-LocalUser -Name 'Administrator' -PasswordNeverExpires $true
+}
+
 # main
+Write-Host "[UNATTEND] STEP BEGIN: $step"
 $img = read_img_json
 switch ($step) {
     2 {
@@ -343,6 +388,7 @@ switch ($step) {
         step_disk
         step_defender
         step_default_profile
+        step_password_policy
     }
     3 {
         step_choco
@@ -363,10 +409,10 @@ switch ($step) {
        step_reboot
     }
     default {
-        Write-Error "Unknown step: $step"
+        Write-Error "[UNATTEND] ERROR STEP UNKNOWN: $step"
         exit 3
     }
 }
 
-Write-Host "STEP $step DONE"
+Write-Host "[UNATTEND] STEP END: $step"
 exit 0
