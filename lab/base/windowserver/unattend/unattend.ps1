@@ -31,6 +31,17 @@ Set-PSDebug -Trace 1
 # - 'D:' windows.iso
 # - 'E:' unattend.iso
 # - 'F:' virtio.iso
+#
+# Step Ordering:
+# 1. latest PowerShell is installed first. this script relies on it.
+# 2-99. specialize pass; hardware / image. synchronous, in order.
+#       some integral services and environment are not fully available.
+#       xml forces reboot after each.
+# 111.  out-of-box-experience (oobe) system pass; first-logon.
+#       effectively asynchronous and unordered.
+#       reboot is not available.
+#       integral services and environment are available.
+#       xml users exist.
 
 function read_img_json {
     Get-Content -LiteralPath 'E:\img.json' -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
