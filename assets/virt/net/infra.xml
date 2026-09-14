@@ -1,0 +1,25 @@
+<network xmlns:dnsmasq='http://libvirt.org/schemas/network/dnsmasq/1.0'>
+  <name>infra</name>
+  <forward mode='nat'/>
+  <domain name='infra' localOnly='yes' register="yes"/>
+  <ip address='192.168.123.1' netmask='255.255.255.0'/>
+
+  <!-- DHCP is configured below; do not add an untagged <dhcp> range. -->
+  <dnsmasq:options>
+    <dnsmasq:option value='dhcp-authoritative'/>
+
+    <!-- Select the AD pool using the client's DHCP user class. -->
+    <dnsmasq:option value='dhcp-userclass=set:adlab,adlab'/>
+
+    <!-- Default pool: lab.infra -->
+    <dnsmasq:option value='dhcp-range=tag:!adlab,192.168.123.100,192.168.123.149,255.255.255.0,12h'/>
+    <dnsmasq:option value='domain=lab.infra,192.168.123.100,192.168.123.149'/>
+
+    <!-- AD pool: ad.lab.infra -->
+    <dnsmasq:option value='dhcp-range=tag:adlab,192.168.123.150,192.168.123.199,255.255.255.0,12h'/>
+    <dnsmasq:option value='domain=ad.lab.infra,192.168.123.150,192.168.123.199'/>
+
+    <!-- Publish qualified names; permit repeated short names across pools. -->
+    <dnsmasq:option value='dhcp-fqdn'/>
+  </dnsmasq:options>
+</network>

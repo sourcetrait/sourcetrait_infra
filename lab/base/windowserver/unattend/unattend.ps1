@@ -33,8 +33,9 @@ Set-PSDebug -Trace 1
 # - 'F:' virtio.iso
 #
 # Step Ordering:
-# 1. latest PowerShell is installed first. this script relies on it.
-# 2-99. specialize pass; hardware / image. synchronous, in order.
+# 1. virtio guest install
+# 2. latest PowerShell install. this script relies on it.
+# 3-99. specialize pass; hardware / image. synchronous, in order.
 #       some integral services and environment are not fully available.
 #       reboot stepping is available; xml uses WillReboot. resumes at next step.
 # 100+. out-of-box-experience (oobe) system pass; first-logon.
@@ -54,19 +55,6 @@ function log_quick_skip {
     )
 
     Write-Host "[UNATTEND] SKIP Skipped: $skipped"
-}
-
-function step_virtio {
-    $virtio_exits = @(
-        0 # success
-        3010 # success, reboot required
-    )
-
-    # install the virtio drivers and the qemu guest agent from the attached iso
-    $p = Start-Process 'F:\virtio-win-guest-tools.exe' -ArgumentList '/install /quiet /norestart /log C:\Windows\Temp\virtio_win.log' -Wait -PassThru
-    if ($p.ExitCode -notin $virtio_exits) {
-        throw '[UNATTEND] ERROR Failed to install virtio guest tools'
-    }
 }
 
 function step_update {
@@ -429,7 +417,7 @@ function step_password_policy {
 Write-Host "[UNATTEND] STEP BEGIN: $step"
 $img = read_img_json
 switch ($step) {
-    2 {
+    3 {
         step_sshd
         step_winre
         step_disk
@@ -437,14 +425,13 @@ switch ($step) {
         step_default_profile
         step_password_policy
     }
-    3 {
+    4 {
         step_choco
         step_nushell
     }
     111 {
        step_update $img
        step_net
-       step_virtio
        step_user_usrlay $img 'lab'
        step_vs
        step_rust

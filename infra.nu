@@ -8,11 +8,11 @@ export const BUILD_PATHS: list<path> = [
   $LAB_AD_MEMBER
 ]
 
-export const BUILDS: table<path: path, hostname: string, slug: string> = [
-    [path                 hostname                   slug               ];
-    ['lab/windowserver'   'windowserver.lab.infra'   'lab-windowserver' ]
-    ['lab/ad/controller'  'controller.ad.lab.infra'  'lab-ad-controller']
-    ['lab/ad/member'      'member.ad.lab.infra'      'lab-ad-member'    ]
+export const BUILDS: table<path: path, name: string, hostname: string, domain: string> = [
+    [path                 name                hostname         domain        ];
+    ['lab/windowserver'   'lab-windowserver'  'windowserver'   'lab.infra'   ]
+    ['lab/ad/controller'  'lab-ad-controller' 'controller'     'ad.lab.infra']
+    ['lab/ad/member'      'lab-ad-member'     'member'         'ad.lab.infra']
 ]
 
 export def builds []: nothing -> list<path> { BUILD_PATHS }
@@ -30,7 +30,7 @@ def init [quick: bool = false] {
   let config_dir = $config_home | path join $CONFIG_DIRNAME
   if not ($config_dir | path exists) {
     mkdir $config_dir
-    cp ($INFRA_DIR | path join 'assets' 'default' 'config.toml') $config_dir
+    cp ($INFRA_DIR | path join 'assets/xdg/config/config.toml' | path expand) $config_dir
   }
 
   let cfg = open ($config_dir | path join 'config.toml')
@@ -80,8 +80,8 @@ def init [quick: bool = false] {
   }
 }
 
-def get_build [name: string@builds]: nothing -> record<path: path, hostname: string, slug: string> {
-    $BUILDS | where path == $name | first
+def get_build [build: string@builds]: nothing -> record<path: path, name: string, hostname: string, domain: string> {
+    $BUILDS | where path == $build | first
 }
 
 # a string name parameter can take two forms: hostname (foo.bar.infra) or slug (kebab-case)
@@ -89,64 +89,39 @@ def get_build [name: string@builds]: nothing -> record<path: path, hostname: str
 # slug is used for things such as netbios name (windows's computername)
 # if a slug is provided, the hostname / name will be "($slug).infra"
 # if a hostname is provided, the slug will be the reverse of the hostname, sans 'infra'
-def make_img [build: string@builds, state: record, img: oneof<nothing,string,record>]: nothing -> record<name: string, hostname: string> {
+def make_img [build: string@builds, state: record, img: oneof<nothing,string,record>]: nothing -> record<namepath: path, name: string, hostname: string, domain: string, dumb_password: string> {
     let build = get_build $build
     
     mut name: oneof<nothing,string> = null
     mut hostname: oneof<nothing,string> = null
-    mut slug: oneof<nothing,string> = null
+    mut domain: oneof<nothing,string> = null
     
     let img = match ($img | describe) {
         'nothing' => {},
         'string' => {
-            $name = $img | default -e null
+            $name = $img | str kebab-case | default -e null
             {}
         },
         _ => {
-            # these three are required together
-            $name = $img | get -o name | default -e null
-            $hostname = $img | get -o hostname | default -e null
-            $slug = $img | get -o slug | default -e null
-            
-            if $name != null or $hostname != null or $slug != null {
-                if $name == null or $hostname == null or $slug == null {
-                    error make --unspanned "image name, hostname, slug must be defined together or not at all"
-                } else if not ($name | str ends-with '.infra') {
-                    error make --unspanned $"image name is not a '.infra' hostname: ($name)"
-                } else if not ($hostname | str ends-with '.infra') {
-                    error make --unspanned $"image hostname is not a '.infra' hostname: ($hostname)"
-                } else if not (($slug | str kebab-case) != $slug) {
-                    error make --unspanned $"image slug is a valid slug: ($slug)"
-                }
-            }
+            $name = $img | get -o name | default -e '' | str kebab-case | default -e null
+            $hostname = $img | get -o hostname | default -e '' | str trim | str lowercase | default -e null
+            $domain = $img | get -o domain | default -e '' | str trim | str lowercase | default -e null
         }
     }
 
-    if $name == null {
-        $name = $build.hostname
-        $hostname = $build.hostname
-        $slug = $build.slug
-    } else if $hostname == null or $slug == null {
-        if ($name | str ends-with '.infra') {
-            $name = $name | str lowercase
-            $hostname = $name
-            $slug = $name
-                | split row '.' | reverse | skip 1
-                | str join '-' | str kebab-case
-        } else {
-            $slug = $name | str kebab-case
-            if not $slug == $name {
-                error make --unspanned $"image name is not a valid slug: ($name)"
-            }
-            
-            $hostname = $"($name).infra"
-        }
+    if $name != null and $hostname == null {
+        $hostname = $name
     }
+
+    $name = $name | default -e $build.name
+    $hostname = $hostname | default -e $build.hostname
+    $domain = $domain | default -e $build.domain
   
   {
+    namepath: $build.path
     name: $name
     hostname: $hostname
-    slug: $slug
+    domain: $domain
     dumb_password: $state.cfg.dumb_password
   }
 }

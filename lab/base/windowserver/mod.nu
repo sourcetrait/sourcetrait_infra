@@ -10,7 +10,7 @@ export def build [state: record, img: record] {
     --cdrom /mnt/storage/kvm/iso/windows_server_2025_eval_noprompt.iso
     --disk path=($unattend_iso),device=cdrom,bus=sata
     --disk path=($state.path.vm.virtio_win_iso),device=cdrom,bus=sata
-    --network network=default,model=e1000e
+    --network network=infra,model=virtio
     --graphics spice,listen=127.0.0.1
     --video qxl
     --sound none
@@ -33,7 +33,7 @@ export def debug_build [state: record, img: record] {
     --cdrom /mnt/storage/kvm/iso/windows_server_2025_eval_noprompt.iso
     --disk path=($unattend_iso),device=cdrom,bus=sata
     --disk path=($state.path.vm.virtio_win_iso),device=cdrom,bus=sata
-    --network network=default,model=e1000e
+    --network network=infra,model=virtio
     --graphics spice,listen=127.0.0.1
     --video qxl
     --sound none
