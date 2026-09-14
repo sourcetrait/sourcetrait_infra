@@ -8,12 +8,22 @@ export const BUILD_PATHS: list<path> = [
   $LAB_AD_MEMBER
 ]
 
-export const BUILDS: table<path: path, name: string, hostname: string, domain: string> = [
-    [path                 name                hostname         domain        ];
-    ['lab/windowserver'   'lab-windowserver'  'windowserver'   'lab.infra'   ]
-    ['lab/ad/controller'  'lab-ad-controller' 'controller'     'ad.lab.infra']
-    ['lab/ad/member'      'lab-ad-member'     'member'         'ad.lab.infra']
+export const BUILDS: table<namepath: path, hostname: string, net: list<string>> = [
+    [ namepath             hostname        net            ];
+    [ 'lab/windowserver'   'windowserver'  [lab infra]    ]
+    [ 'lab/ad/controller'  'controller'    [ad lab infra] ]
+    [ 'lab/ad/member'      'member'        [ad lab infra] ]
 ]
+
+export def vm_network [net: list<string>, top: list<string> = []]: nothing -> string {
+    let net = $net | str join '-'
+    if ($top | is-empty) {
+        $net
+    } else {
+        let top = $top | str join '-'
+        $"($net)-($top)"
+    }
+}
 
 export def builds []: nothing -> list<path> { BUILD_PATHS }
 
@@ -80,21 +90,26 @@ def init [quick: bool = false] {
   }
 }
 
-def get_build [build: string@builds]: nothing -> record<path: path, name: string, hostname: string, domain: string> {
+def get_build [build: string@builds]: nothing -> record<path: path, name: string, hostname: string, subdomain: string> {
     $BUILDS | where path == $build | first
 }
 
-# a string name parameter can take two forms: hostname (foo.bar.infra) or slug (kebab-case)
-# the final name is always the same as the hostname, as its resolved by nss
-# slug is used for things such as netbios name (windows's computername)
-# if a slug is provided, the hostname / name will be "($slug).infra"
-# if a hostname is provided, the slug will be the reverse of the hostname, sans 'infra'
-def make_img [build: string@builds, state: record, img: oneof<nothing,string,record>]: nothing -> record<namepath: path, name: string, hostname: string, domain: string, dumb_password: string> {
+def get_build_name [build: record]: nothing -> string {
+    $"($build.hostname)-($build.net | str join '-')"
+}
+
+def make_img [
+    build: string@builds,
+    state: record,
+    img: oneof<nothing,record>,
+    nick: oneof<nothing,string> = null
+]: nothing -> record<namepath: path, name: string, hostname: string, domain: string, network: string, dumb_password: string> {
     let build = get_build $build
     
     mut name: oneof<nothing,string> = null
     mut hostname: oneof<nothing,string> = null
     mut domain: oneof<nothing,string> = null
+    mut network: oneof<nothing,string> = null
     
     let img = match ($img | describe) {
         'nothing' => {},
@@ -122,6 +137,7 @@ def make_img [build: string@builds, state: record, img: oneof<nothing,string,rec
     name: $name
     hostname: $hostname
     domain: $domain
+    network: $network
     dumb_password: $state.cfg.dumb_password
   }
 }
@@ -166,13 +182,17 @@ export def 'main debug unattend' [build: path@builds, img: oneof<nothing,string,
   print $xml
 }
 
-export def 'main build' [build: path@builds, img: oneof<nothing,string, record> = null, --quick] {
+export def 'main build' [
+    build: path@builds,
+    --nick: string,
+    --quick
+]: oneof<nothing,record> -> nothing {
   if not ($build in $BUILD_PATHS) {
     error make $"not a build"
   }
 
   let state = init $quick
-  let img = make_img $build $state $img
+  let img = make_img $build $state $in $nick
 
   match $build {
     $LAB_AD_MEMBER => {

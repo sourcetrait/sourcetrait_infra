@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 Set-PSDebug -Trace 1
 
-Write-Host "[UNATTEND] STEP BEGIN: VIRTIO (1)"
+Write-Host "[UNATTEND] STEP BEGIN: 1"
 
 function step_virtio {
     $virtio_exits = @(
@@ -19,5 +19,5 @@ function step_virtio {
 
 step_virtio
 
-Write-Host "[UNATTEND] STEP END: VIRTIO (1)"
+Write-Host "[UNATTEND] STEP END: 1"
 exit 0

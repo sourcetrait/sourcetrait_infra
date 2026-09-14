@@ -108,14 +108,14 @@
       <RunSynchronous>
         <RunSynchronousCommand wcm:action="add">
           <Order>1</Order>
-          <Description>Step 1: Install VirtIO Guest</Description>
-          <Path>cmd.exe /c "powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_virtio.ps1 1&gt;C:\Windows\Temp\unattend_1.log 2&gt;&amp;1"</Path>
+          <Description>Step 1</Description>
+          <Path>cmd.exe /c "powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_1.ps1 1&gt;C:\Windows\Temp\unattend_1.log 2&gt;&amp;1"</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
         <RunSynchronousCommand wcm:action="add">
           <Order>2</Order>
-          <Description>Step 2: Install latest PowerShell</Description>
-          <Path>cmd.exe /c "powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_pwsh.ps1 1&gt;C:\Windows\Temp\unattend_2.log 2&gt;&amp;1"</Path>
+          <Description>Step 2</Description>
+          <Path>cmd.exe /c "powershell -NoProfile -ExecutionPolicy Bypass -File E:\unattend_2.ps1 1&gt;C:\Windows\Temp\unattend_2.log 2&gt;&amp;1"</Path>
           <WillReboot>Always</WillReboot>
         </RunSynchronousCommand>
         <RunSynchronousCommand wcm:action="add">
