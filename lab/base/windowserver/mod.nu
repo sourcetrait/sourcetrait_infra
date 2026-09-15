@@ -1,5 +1,6 @@
 const DIR_SELF: directory = path self .
-const WINDOWS_ISO: path = 'windows_server_2025_noprompt.iso'
+const WINDOWS_ISO: path = 'windows_server_2025.noprompt.iso'
+const VIRTIO_WIN_ISO: path = 'virtio-win.iso'
 
 export def build [
     state: record
@@ -7,12 +8,12 @@ export def build [
     debug: bool = false
 ]: nothing -> nothing {
     let unattend_iso = match $debug {
-        true => ($state.path.vm.unattend_dir | path join $"($img.name)_unattend.iso"),
+        true => ($state.path.vm.unattend_dir | path join $"($img.name).unattend.iso"),
         false => (build_unattend $state $img)
     }
     let disk = $state.path.vm.disk_dir | path join $"($img.name).qcow2" | path expand
     let windows_iso = $state.path.vm.iso_dir | path join $WINDOWS_ISO
-    let virtio_iso = $state.path.vm.virtio_win_iso
+    let virtio_iso = $state.path.vm.iso_dir | path join $VIRTIO_WIN_ISO
 
     let debug_cmd = match $debug {
         false => '',
@@ -99,29 +100,11 @@ export def build_unattend [state: record, img: record, debug: bool = false]: not
     
     xorriso -as mkisofs -o $iso_file -V UNATTEND -J -r $target_dir
     
-    let unattend_dir = ($state.path.vm.unattend_dir | path join ($img.name))
-    if not ($unattend_dir | path exists) {
-        mkdir $unattend_dir
-        chown ($env.USER):($state.group.vm) $unattend_dir
-        chmod 770 $unattend_dir
-    }
-    
-    let unattend_iso = ($unattend_dir | path join 'unattend.iso')
-    let unattend_iso_link = ($state.path.vm.unattend_dir | path join $"($img.name)_unattend.iso")
-    if ($unattend_iso_link | path exists) {
-        rm $unattend_iso_link
-    }
-    
+    let unattend_iso = ($state.path.vm.unattend_dir | path join $"($img.name).unattend.iso")
     mv $iso_file $unattend_iso
     chown ($env.USER):($state.group.vm) $unattend_iso
     chmod 660 $unattend_iso
-    (
-        cd $state.path.vm.unattend_dir ;
-        ln -s ($img.name | path join 'unattend.iso') $"($img.name)_unattend.iso"
-    )
-    chown ($env.USER):($state.group.vm) $unattend_iso_link
-    chmod 660 $unattend_iso_link
     
-    #rm -rf $tmp_dir
-    $unattend_iso_link
+    rm -rf $tmp_dir
+    $unattend_iso
 }
