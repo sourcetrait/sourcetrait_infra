@@ -249,6 +249,9 @@ function step_user_usrlay {
     $config = "C:\Users\$user\.config"
     Copy-Item 'E:\config\*' $config -Recurse
 
+    Get-ChildItem -LiteralPath $config -Recurse -Force -File |
+        ForEach-Object { $_.IsReadOnly = $false }
+
     # setup nushell
     New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\of\nu\mod"
     register_nu_plugins $cred $user
@@ -263,7 +266,9 @@ function step_user_usrlay {
     # setup ssh
     $ssh = "C:\Users\$user\.ssh"
     Copy-Item 'E:\.ssh' $ssh -Recurse
-    Get-ChildItem $ssh -Recurse -File | ForEach-Object { $_.IsReadOnly = ($_.Name -ne 'authorized_keys') }
+    Get-ChildItem -LiteralPath $ssh -Recurse -Force -File |
+        ForEach-Object { $_.IsReadOnly = ($_.Name -like 'id_*') }
+        
     icacls.exe $ssh /setowner $user /t /c
     icacls.exe $ssh /inheritance:r /grant "${user}:(OI)(CI)F" /grant 'SYSTEM:(OI)(CI)F'
 }
@@ -358,7 +363,7 @@ function step_net {
 
 function step_sconfig {
     # disable sconfig on startup
-    powershell -NoProfile -Command 'Set-SConfig -AutoLaunch $false'
+    powershell -NoProfile -Command 'Set-SConfig -AutoLaunch $false -AllUsers'
 }
 
 function step_ngen {
