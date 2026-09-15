@@ -105,7 +105,7 @@ def make_img [
     }
 
     if $nick != null {
-        $out.name = $img | str kebab-case | default -e null
+        $out.name = $nick | str kebab-case | default -e null
         if $out.name == null {
             error make --unspanned $"invalid nick: $(nick)"
         }
@@ -120,9 +120,9 @@ def make_img [
 
 export def 'main build' [
     namepath: path@namepaths,
-    --nick: string, -n: string
-    --inet: string = 'test', -i: string = 'test'
-    --skip, -s
+    --nick(-n): string
+    --inet(-i): string = 'test'
+    --skip(-s)
     --debug,
 ]: oneof<nothing,record> -> nothing {
     if $nick != null and $in != null { err_exclusive_nick }
@@ -152,9 +152,9 @@ export def 'main build' [
 
 export def 'main build unattend' [
     namepath: path@namepaths,
-    --nick: string, -n: string
-    --inet: string = 'test', -i: string = 'test'
-    --skip, -s
+    --nick(-n): string
+    --inet(-i): string = 'test'
+    --skip(-s)
     --debug,
 ]: nothing -> path {
     if $nick != null and $in != null { err_exclusive_nick }
