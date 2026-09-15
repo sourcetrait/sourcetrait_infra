@@ -1,4 +1,4 @@
-use ../../base/windowserver
+use ../base/windowserver
 
 export def build [state: record, img: record, debug: bool = false]: nothing -> nothing {
     windowserver build $state $img $debug

@@ -1,11 +1,30 @@
+const DIR_SELF: directory = path self .
+const WINDOWS_ISO: path = 'windows_server_2025_noprompt.iso'
+const UNATTEND_ISO: path = 'unattend.iso'
 
-export def build [state: record, img: record]: nothing -> nothing {
-    let unattend_iso = build_unattend $state $img
+export def build [
+    state: record
+    img: record
+    debug: bool = false
+]: nothing -> nothing {
+    let unattend_iso = match $debug {
+        false => ($state.path.vm.unattend_dir | path join $img.name $UNATTEND_ISO),
+        true => (build_unattend $state $img)
+    }
     let disk = $state.path.vm.disk_dir | path join $img.name '.qcow2' | path expand
-    let windows_iso = $state.path.vm.iso_dir | path join 'windows_server_2025_noprompt.iso'
+    let windows_iso = $state.path.vm.iso_dir | path join $WINDOWS_ISO
     let virtio_iso = $state.path.vm.virtio_win_iso
+
+    let debug_cmd = match $debug {
+        false => '',
+        true => "
+            --dry-run
+            --print-xml
+        "
+    }
     
-    ( virt-install
+    let cmd = $"
+    virt-install
         --name ($img.name)
         --memory 32768
         --vcpus 16
@@ -23,46 +42,22 @@ export def build [state: record, img: record]: nothing -> nothing {
         --channel unix,target.type=virtio,target.name=org.qemu.guest_agent.0
         --memballoon virtio
         --boot uefi,hd,cdrom
-    )
+        ($debug_cmd)
+    " | trim
+
+    nu -c $cmd
 }
 
-export def debug_build [state: record, img: record]: nothing -> nothing {
-    let unattend_iso = ($state.path.vm.unattend_dir | path join $img.name 'unattend.iso')
-    let disk = $state.path.vm.disk_dir | path join $img.name '.qcow2' | path expand
-    let windows_iso = $state.path.vm.iso_dir | path join 'windows_server_2025_noprompt.iso'
-    let virtio_iso = $state.path.vm.virtio_win_iso
-    
-    ( virt-install
-        --name ($img.name)
-        --memory 32768
-        --vcpus 16
-        --os-variant win2k25
-        --disk format=qcow2,size=260,bus=sata,path=($disk)
-        --cdrom ($windows_iso)
-        --disk device=cdrom,bus=sata,path=($unattend_iso)
-        --disk device=cdrom,bus=stats,path=($virtio_iso)
-        --network model=virtio,network=($img.network)
-        --graphics spice,listen=127.0.0.1
-        --video qxl
-        --sound none
-        --controller type=virtio-serial
-        --input tablet,bus=usb
-        --channel unix,target.type=virtio,target.name=org.qemu.guest_agent.0
-        --memballoon virtio
-        --boot uefi,hd,cdrom
-        --dry-run
-        --print-xml
-    )
-}
-
-export def debug_unattend [state: record, img: record]: nothing -> string {
-    const DIR_SELF: directory = path self .
+def debug_unattend [state: record, img: record]: nothing -> string {
     open ($DIR_SELF | path join 'autounattend.xml.liquid')
-    | from grimoire liquid $img
+    | str soak $img
 }
 
-export def build_unattend [state: record, img: record]: nothing -> path {
-    const DIR_SELF: directory = path self .
+export def build_unattend [state: record, img: record, debug: bool = false]: nothing -> path {
+    if $debug {
+        return (debug_unattend $state $img)
+    }
+    
     let tmp_dir = (mktemp -d .infra-unattend.XXXXXX)
     let target_dir = ($tmp_dir | path join 'target')
     let ssh_dir = ($target_dir | path join '.ssh')

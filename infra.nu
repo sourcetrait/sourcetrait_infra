@@ -1,36 +1,24 @@
 #!/usr/bin/env nu
 
-const LAB_AD_CONTROLLER: path = 'lab/ad/controller'
-const LAB_AD_MEMBER: path = 'lab/ad/member'
+const INFRA_DIR: directory = path self .
+const CONFIG_DIRNAME: directory = 'sourcetrait/infra'
+const INETS: list<string> = [default test infra]
 
-export const BUILD_PATHS: list<path> = [
-  $LAB_AD_CONTROLLER
-  $LAB_AD_MEMBER
+const BUILDS: table<namepath: path, hostname: string, subnet: list<string>> = [
+    [ namepath             hostname        subnet   ];
+    [ 'lab/windowserver'   'windowserver'  [lab]    ]
+    [ 'lab/ad/controller'  'controller'    [ad lab] ]
+    [ 'lab/ad/member'      'member'        [ad lab] ]
 ]
+const PATH_LAB_WINDOWSERVER: directory = 'lab/windowserver'
+const PATH_LAB_AD_CONTROLLER: directory = 'lab/ad/controller'
+const PATH_LAB_AD_MEMBER: directory = 'lab/ad/member'
 
-export const BUILDS: table<namepath: path, hostname: string, net: list<string>> = [
-    [ namepath             hostname        net            ];
-    [ 'lab/windowserver'   'windowserver'  [lab infra]    ]
-    [ 'lab/ad/controller'  'controller'    [ad lab infra] ]
-    [ 'lab/ad/member'      'member'        [ad lab infra] ]
-]
-
-export def vm_network [net: list<string>, top: list<string> = []]: nothing -> string {
-    let net = $net | str join '-'
-    if ($top | is-empty) {
-        $net
-    } else {
-        let top = $top | str join '-'
-        $"($net)-($top)"
-    }
+export def namepaths []: nothing -> list<path> {
+    $BUILDS | get namepath 
 }
 
-export def builds []: nothing -> list<path> { BUILD_PATHS }
-
-const CONFIG_DIRNAME: directory = 'sourcetrait/infra'
-const INFRA_DIR: directory = path self .
-
-def init [quick: bool = false] {
+def init [skip: bool = false] {
   let usrlay_repo = $INFRA_DIR | path join 'extern/usrlay'
   if not ($usrlay_repo | path join 'VERSION' | path exists) {
     error make $"extern/usrlay does not exist"
@@ -86,144 +74,116 @@ def init [quick: bool = false] {
       vm: 'vmusr'
     },
     cfg: $cfg,
-    quick: $quick,
+    $skip: $skip,
   }
 }
 
-def get_build [build: string@builds]: nothing -> record<path: path, name: string, hostname: string, subdomain: string> {
-    $BUILDS | where path == $build | first
+def get_build [namepath: string@namepaths]: nothing -> record<path: path, name: string, hostname: string, subdomain: string> {
+    $BUILDS | where path == $namepath | first
 }
 
-def get_build_name [build: record]: nothing -> string {
-    $"($build.hostname)-($build.net | str join '-')"
+def err_exclusive_nick [] {
+    error make --unspanned $"--nick and $in are mutually exclusive arguments"
 }
 
 def make_img [
-    build: string@builds,
+    build: record,
     state: record,
-    img: oneof<nothing,record>,
+    img: oneof<nothing,record> = null,
+    inet: string = 'test',
     nick: oneof<nothing,string> = null
 ]: nothing -> record<namepath: path, name: string, hostname: string, domain: string, network: string, dumb_password: string> {
-    let build = get_build $build
     
-    mut name: oneof<nothing,string> = null
-    mut hostname: oneof<nothing,string> = null
-    mut domain: oneof<nothing,string> = null
-    mut network: oneof<nothing,string> = null
-    
-    let img = match ($img | describe) {
-        'nothing' => {},
-        'string' => {
-            $name = $img | str kebab-case | default -e null
-            {}
-        },
-        _ => {
-            $name = $img | get -o name | default -e '' | str kebab-case | default -e null
-            $hostname = $img | get -o hostname | default -e '' | str trim | str lowercase | default -e null
-            $domain = $img | get -o domain | default -e '' | str trim | str lowercase | default -e null
+    mut out = {
+      namepath: $build.namepath
+      name: ($build.subnets | prepend $build.hostname | append $inet | str join '-')
+      hostname: $build.hostname
+      domain: ($build.subnets | append $inet | str join '.')
+      network: (match $inet {
+          'test' | 'infra' => ($build.subnets | append $inet | str join '-'),
+          $other => $other
+      })
+      dumb_password: $state.cfg.dumb_password
+    }
+
+    if $nick != null {
+        $out.name = $img | str kebab-case | default -e null
+        if $out.name == null {
+            error make --unspanned $"invalid nick: $(nick)"
         }
+
+        $out.hostname = $nick
+    } else if $img != null {
+        $out = $out | merge $img
     }
 
-    if $name != null and $hostname == null {
-        $hostname = $name
-    }
-
-    $name = $name | default -e $build.name
-    $hostname = $hostname | default -e $build.hostname
-    $domain = $domain | default -e $build.domain
-  
-  {
-    namepath: $build.path
-    name: $name
-    hostname: $hostname
-    domain: $domain
-    network: $network
-    dumb_password: $state.cfg.dumb_password
-  }
-}
-
-export def 'main debug build' [build: path@builds, img: oneof<nothing,string,record> = null, --quick] {
-  if not ($build in $BUILD_PATHS) {
-    error make $"not a build"
-  }
-
-  let state = init $quick
-  let img = make_img $build $state $img
-
-  match $build {
-    $LAB_AD_MEMBER => {
-        overlay use --prefix ./lab/ad/member
-        member debug_build $state $img
-    },
-    _ => {
-      error make $"not a build"
-    },
-  }
-}
-
-export def 'main debug unattend' [build: path@builds, img: oneof<nothing,string, record> = null, --quick] {
-  if not ($build in $BUILD_PATHS) {
-    error make $"not a build"
-  }
-
-  let state = init $quick
-  let img = make_img $build $state $img
-
-  let xml = match $build {
-    $LAB_AD_MEMBER => {
-        overlay use --prefix ./lab/ad/member
-        member debug_unattend $state $img
-    },
-    _ => {
-      error make $"not a build"
-    },
-  }
-
-  print $xml
+    $out
 }
 
 export def 'main build' [
-    build: path@builds,
-    --nick: string,
-    --quick
+    namepath: path@namepaths,
+    --nick: string, -n: string
+    --inet: string, -i: string
+    --skip, -s
+    --debug,
 ]: oneof<nothing,record> -> nothing {
-  if not ($build in $BUILD_PATHS) {
-    error make $"not a build"
-  }
-
-  let state = init $quick
-  let img = make_img $build $state $in $nick
-
-  match $build {
-    $LAB_AD_MEMBER => {
-        overlay use --prefix ./lab/ad/member 
-        member build $state $img
-    },
-    _ => {
-      error make $"not a build"
-    },
-  }
+    if $nick != null and $in != null { err_exclusive_nick }
+    
+    let build = get_build $namepath
+    let state = init $skip
+    let img = make_img $build $state $in $inet $nick
+    
+    match $namepath {
+        $PATH_LAB_WINDOWSERVER => {
+            overlay use --prefix ./lab/windowserver 
+            windowserver build $state $img $debug
+        },
+        $PATH_LAB_AD_CONTROLLER => {
+            overlay use --prefix ./lab/ad/controller 
+            controller build $state $img $debug
+        },
+        $PATH_LAB_AD_MEMBER => {
+            overlay use --prefix ./lab/ad/member 
+            member build $state $img $debug
+        },
+        _ => {
+            error make $"unimplemented: match module: ($namepath)"
+        },
+    }
 }
 
-export def 'main build unattend' [build: path@builds, img: oneof<nothing,string,record> = null, --quick]: nothing -> path {
-  if not ($build in $BUILD_PATHS) {
-    error make $"not a build"
-  }
-
-  let state = init $quick
-  let img = make_img $build $state $img
-
-  let iso_file = match $build {
-    $LAB_AD_MEMBER => {
-        overlay use --prefix ./lab/ad/member 
-        member build_unattend $state $img
-    },
-    _ => {
-      error make $"not a build"
-    },
-  }
-
-  $iso_file
+export def 'main build unattend' [
+    namepath: path@namepaths,
+    --nick: string, -n: string
+    --inet: string, -i: string
+    --skip, -s
+    --debug,
+]: nothing -> path {
+    if $nick != null and $in != null { err_exclusive_nick }
+    
+    let build = get_build $namepath
+    let state = init $skip
+    let img = make_img $build $state $in $inet $nick
+    
+    let iso_file = match $namepath {
+        $PATH_LAB_WINDOWSERVER => {
+            overlay use --prefix ./lab/windowserver 
+            windowserver build_unattend $state $img $debug
+        },
+        $PATH_LAB_AD_CONTROLLER => {
+            overlay use --prefix ./lab/ad/controller 
+            controller build_unattend $state $img $debug
+        },
+        $PATH_LAB_AD_MEMBER => {
+            overlay use --prefix ./lab/ad/member 
+            member build_unattend $state $img $debug
+        },
+        _ => {
+            error make $"unimplemented: match module: ($namepath)"
+        },
+    }
+    
+    $iso_file
 }
 
 # Downloads the ISO if it isn't already in the ISO dir.
