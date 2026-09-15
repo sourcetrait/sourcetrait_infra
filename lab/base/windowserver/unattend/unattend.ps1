@@ -33,7 +33,7 @@ Set-PSDebug -Trace 1
 # - 'F:' virtio.iso
 #
 # Step Ordering:
-# 1. virtio guest install
+# 1. virtio driver install
 # 2. latest PowerShell install. this script relies on it.
 # 3-99. specialize pass; hardware / image. synchronous, in order.
 #       some integral services and environment are not fully available.
