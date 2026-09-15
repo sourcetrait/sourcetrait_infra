@@ -4,27 +4,11 @@ Set-PSDebug -Trace 1
 
 Write-Host "[UNATTEND] STEP BEGIN: 2"
 
-function read_img_json {
-    Get-Content -LiteralPath 'E:\img.json' -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-}
-
-function step_nic {
-    param(
-        [Parameter(Mandatory)]
-        [pscustomobject]$img
-    )
-    if ([string]::IsNullOrWhiteSpace($img.dhcp)) {
-        return
-    }
-}
-
 function step_pwsh {
     # install latest powershell
     Invoke-Expression "& { $(Invoke-RestMethod https://aka.ms/install-powershell.ps1) } -UseMSI -Quiet"
 }
 
-$img = read_img_json
-step_nic $img
 step_pwsh
 
 Write-Host "[UNATTEND] STEP END: 2"
