@@ -16,10 +16,6 @@ function step_nic {
     if ([string]::IsNullOrWhiteSpace($img.dhcp)) {
         return
     }
-    
-    ipconfig /setclassid '*' $img.dhcp
-    ipconfig /release '*'
-    ipconfig /renew '*'
 }
 
 function step_pwsh {
@@ -28,7 +24,7 @@ function step_pwsh {
 }
 
 $img = read_img_json
-step_nic
+step_nic $img
 step_pwsh
 
 Write-Host "[UNATTEND] STEP END: 2"

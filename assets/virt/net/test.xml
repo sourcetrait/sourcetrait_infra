@@ -1,0 +1,12 @@
+<network>
+  <name>test</name>
+  <forward mode='nat'/>
+  <domain name='test' localOnly='yes' register='yes'/>
+  <ip address='192.168.254.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.254.20' end='192.168.254.253'>
+        <lease expiry='12' unit='hours'/>
+      </range>
+    </dhcp>
+  </ip>
+</network>

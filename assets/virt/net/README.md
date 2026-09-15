@@ -1,0 +1,19 @@
+files (name, subnet):
+- test.xml
+  - test
+  - 192.168.254.0
+- lab.test.xml
+  - lab-test
+  - 192.168.253.0
+- ad.lab.test.xml
+  - ad-lab-test
+  - 192.168.252.0
+- infra.xml
+  - infra
+  - 192.168.234.0
+- lab.infra.xml
+  - lab-infra
+  - 192.168.233.0
+- ad.lab.infra.xml
+  - ad-lab-infra
+  - 192.168.232.0

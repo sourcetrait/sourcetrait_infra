@@ -1,0 +1,12 @@
+<network>
+  <name>lab-infra</name>
+  <forward mode='nat'/>
+  <domain name='lab.infra' localOnly='yes' register='yes'/>
+  <ip address='192.168.233.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.233.20' end='192.168.233.253'>
+        <lease expiry='12' unit='hours'/>
+      </range>
+    </dhcp>
+  </ip>
+</network>

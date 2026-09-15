@@ -1,6 +1,5 @@
 const DIR_SELF: directory = path self .
 const WINDOWS_ISO: path = 'windows_server_2025_noprompt.iso'
-const UNATTEND_ISO: path = 'unattend.iso'
 
 export def build [
     state: record
@@ -8,8 +7,8 @@ export def build [
     debug: bool = false
 ]: nothing -> nothing {
     let unattend_iso = match $debug {
-        false => ($state.path.vm.unattend_dir | path join $img.name $UNATTEND_ISO),
-        true => (build_unattend $state $img)
+        true => ($state.path.vm.unattend_dir | path join $"($img.name)_unattend.iso"),
+        false => (build_unattend $state $img)
     }
     let disk = $state.path.vm.disk_dir | path join $"($img.name).qcow2" | path expand
     let windows_iso = $state.path.vm.iso_dir | path join $WINDOWS_ISO
@@ -32,7 +31,7 @@ export def build [
         --disk format=qcow2,size=260,bus=sata,path=($disk)
         --cdrom ($windows_iso)
         --disk device=cdrom,bus=sata,path=($unattend_iso)
-        --disk device=cdrom,bus=stats,path=($virtio_iso)
+        --disk device=cdrom,bus=sata,path=($virtio_iso)
         --network model=virtio,network=($img.network)
         --graphics spice,listen=127.0.0.1
         --video qxl

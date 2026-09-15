@@ -10,7 +10,7 @@ Set-PSDebug -Trace 1
 # Log lines:
 # - '[UNATTEND] STEP BEGIN' 
 # - '[UNATTEND] STEP END'
-# - '[UNATTEND] SKIP' Something was skipped by configuration, typically 'quick'
+# - '[UNATTEND] SKIP' Something was skipped by configuration, typically 'skip'
 # - '[UNATTEND] ERROR'
 # - '[UNATTEND] ERROR STEP UNKNOWN' Unlikely to occur
 #
@@ -24,7 +24,7 @@ Set-PSDebug -Trace 1
 # - post-install cleanup will delete unattend logs and unmount iso drives
 #
 # Infra Development:
-# - use '--quick' from infra.nu to disable heavy operations like windows updates and manual pre-compilation
+# - use '--skip' from infra.nu to disable heavy operations like windows updates and manual pre-compilation
 #
 # Drives:
 # - 'C:' root
@@ -48,7 +48,7 @@ function read_img_json {
     Get-Content -LiteralPath 'E:\img.json' -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
 }
 
-function log_quick_skip {
+function log_skip {
     param(
         [Parameter(Mandatory)]
         [string]$skipped
@@ -63,8 +63,8 @@ function step_update {
         [pscustomobject]$img
     )
 
-    if ($img.quick) {
-        log_quick_skip 'step_update'
+    if ($img.skip) {
+        log_skip 'step_update'
         return
     }
     
@@ -354,8 +354,8 @@ function step_ngen {
         [pscustomobject]$img
     )
 
-    if ($img.quick) {
-        log_quick_skip 'step_ngen'
+    if ($img.skip) {
+        log_skip 'step_ngen'
         return
     }
 
