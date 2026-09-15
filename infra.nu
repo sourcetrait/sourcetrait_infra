@@ -74,12 +74,12 @@ def init [skip: bool = false] {
       vm: 'vmusr'
     },
     cfg: $cfg,
-    $skip: $skip,
+    skip: $skip,
   }
 }
 
-def get_build [namepath: string@namepaths]: nothing -> record<path: path, name: string, hostname: string, subdomain: string> {
-    $BUILDS | where path == $namepath | first
+def get_build [namepath: string@namepaths]: nothing -> record<namepath: path, hostname: string, subnet: list<string>> {
+    $BUILDS | where namepath == $namepath | first
 }
 
 def err_exclusive_nick [] {
@@ -93,14 +93,13 @@ def make_img [
     inet: string = 'test',
     nick: oneof<nothing,string> = null
 ]: nothing -> record<namepath: path, name: string, hostname: string, domain: string, network: string, dumb_password: string> {
-    
     mut out = {
       namepath: $build.namepath
-      name: ($build.subnets | prepend $build.hostname | append $inet | str join '-')
+      name: ($build.subnet | prepend $build.hostname | append $inet | str join '-')
       hostname: $build.hostname
-      domain: ($build.subnets | append $inet | str join '.')
+      domain: ($build.subnet | append $inet | str join '.')
       network: (match $inet {
-          'test' | 'infra' => ($build.subnets | append $inet | str join '-'),
+          'test' | 'infra' => ($build.subnet | append $inet | str join '-'),
           $other => $other
       })
       dumb_password: $state.cfg.dumb_password
@@ -123,7 +122,7 @@ def make_img [
 export def 'main build' [
     namepath: path@namepaths,
     --nick: string, -n: string
-    --inet: string, -i: string
+    --inet: string = 'test', -i: string = 'test'
     --skip, -s
     --debug,
 ]: oneof<nothing,record> -> nothing {
@@ -155,7 +154,7 @@ export def 'main build' [
 export def 'main build unattend' [
     namepath: path@namepaths,
     --nick: string, -n: string
-    --inet: string, -i: string
+    --inet: string = 'test', -i: string = 'test'
     --skip, -s
     --debug,
 ]: nothing -> path {

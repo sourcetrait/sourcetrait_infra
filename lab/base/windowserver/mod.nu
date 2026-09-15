@@ -11,7 +11,7 @@ export def build [
         false => ($state.path.vm.unattend_dir | path join $img.name $UNATTEND_ISO),
         true => (build_unattend $state $img)
     }
-    let disk = $state.path.vm.disk_dir | path join $img.name '.qcow2' | path expand
+    let disk = $state.path.vm.disk_dir | path join $"($img.name).qcow2" | path expand
     let windows_iso = $state.path.vm.iso_dir | path join $WINDOWS_ISO
     let virtio_iso = $state.path.vm.virtio_win_iso
 
@@ -23,7 +23,7 @@ export def build [
         "
     }
     
-    let cmd = $"
+    let cmd = $"\(
     virt-install
         --name ($img.name)
         --memory 32768
@@ -43,7 +43,7 @@ export def build [
         --memballoon virtio
         --boot uefi,hd,cdrom
         ($debug_cmd)
-    " | trim
+    )"
 
     nu -c $cmd
 }
@@ -70,13 +70,13 @@ export def build_unattend [state: record, img: record, debug: bool = false]: not
 
     # generate xml
     open ($DIR_SELF | path join 'autounattend.xml.liquid')
-    | from grimoire liquid $img
+    | str soak $img
     | save ($target_dir | path join 'autounattend.xml')
 
     # generate img.json
     {
         dumb_password: $state.cfg.dumb_password
-        quick: $state.quick
+        skip: $state.skip
     }
     | to json
     | save ($target_dir | path join 'img.json')
