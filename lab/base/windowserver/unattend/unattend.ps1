@@ -113,6 +113,19 @@ function step_disk {
     Resize-Partition -DriveLetter C -Size $size.SizeMax
 }
 
+function step_virtio_tools {
+    $virtio_exits = @(
+        0 # success
+        3010 # success, reboot required
+    )
+
+    # install the virtio drivers and the qemu guest agent from the attached iso
+    $p = Start-Process 'F:\virtio-win-guest-tools.exe' -ArgumentList '/install /quiet /norestart /log C:\Windows\Temp\unattend_virtio_tools.log' -Wait -PassThru
+    if ($p.ExitCode -notin $virtio_exits) {
+        throw '[UNATTEND] ERROR Failed to install virtio guest tools'
+    }
+}
+
 function step_choco {
     # install choco
     Invoke-Expression (Invoke-RestMethod 'https://community.chocolatey.org/install.ps1')
@@ -432,6 +445,7 @@ switch ($step) {
     111 {
        step_update $img
        step_net
+       step_virtio_tools
        step_user_usrlay $img 'lab'
        step_vs
        step_rust
