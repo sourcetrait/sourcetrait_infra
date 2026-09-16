@@ -6,7 +6,14 @@ Write-Host "[UNATTEND] STEP BEGIN: 1"
 
 function step_serial_console {
     bcdedit.exe /emssettings EMSPORT:1 EMSBAUDRATE:115200
+    if ($LASTEXITCODE -ne 0) {
+        throw '[UNATTEND] ERROR Failed to configure EMS serial settings'
+    }
+
     bcdedit.exe /ems '{current}' on
+    if ($LASTEXITCODE -ne 0) {
+        throw '[UNATTEND] ERROR Failed to enable EMS'
+    }
 }
 
 function step_virtio_drivers {
