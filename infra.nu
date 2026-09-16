@@ -123,7 +123,8 @@ export def 'main build' [
     --nick(-n): string
     --inet(-i): string = 'test'
     --skip(-s)
-    --debug,
+    --dry
+    --debug
 ]: oneof<nothing,record> -> nothing {
     if $nick != null and $in != null { err_exclusive_nick }
     
@@ -134,15 +135,15 @@ export def 'main build' [
     match $namepath {
         $PATH_LAB_WINDOWSERVER => {
             overlay use --prefix ./lab/windowserver 
-            windowserver build $state $img $debug
+            windowserver build $state $img $dry $debug
         },
         $PATH_LAB_AD_CONTROLLER => {
             overlay use --prefix ./lab/ad/controller 
-            controller build $state $img $debug
+            controller build $state $img $dry $debug
         },
         $PATH_LAB_AD_MEMBER => {
             overlay use --prefix ./lab/ad/member 
-            member build $state $img $debug
+            member build $state $img $dry $debug
         },
         _ => {
             error make $"unimplemented: match module: ($namepath)"
@@ -155,7 +156,8 @@ export def 'main build unattend' [
     --nick(-n): string
     --inet(-i): string = 'test'
     --skip(-s)
-    --debug,
+    --dry
+    --debug
 ]: nothing -> path {
     if $nick != null and $in != null { err_exclusive_nick }
     
@@ -166,15 +168,15 @@ export def 'main build unattend' [
     let iso_file = match $namepath {
         $PATH_LAB_WINDOWSERVER => {
             overlay use --prefix ./lab/windowserver 
-            windowserver build_unattend $state $img $debug
+            windowserver build_unattend $state $img $dry $debug
         },
         $PATH_LAB_AD_CONTROLLER => {
             overlay use --prefix ./lab/ad/controller 
-            controller build_unattend $state $img $debug
+            controller build_unattend $state $img $dry $debug
         },
         $PATH_LAB_AD_MEMBER => {
             overlay use --prefix ./lab/ad/member 
-            member build_unattend $state $img $debug
+            member build_unattend $state $img $dry $debug
         },
         _ => {
             error make $"unimplemented: match module: ($namepath)"

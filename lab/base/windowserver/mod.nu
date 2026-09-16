@@ -5,9 +5,10 @@ const VIRTIO_WIN_ISO: path = 'virtio-win.iso'
 export def build [
     state: record
     img: record
+    dry: bool = false
     debug: bool = false
 ]: nothing -> nothing {
-    let unattend_iso = match $debug {
+    let unattend_iso = match $dry {
         true => ($state.path.vm.unattend_dir | path join $"($img.name).unattend.iso"),
         false => (build_unattend $state $img)
     }
@@ -15,7 +16,7 @@ export def build [
     let windows_iso = $state.path.vm.iso_dir | path join $WINDOWS_ISO
     let virtio_iso = $state.path.vm.iso_dir | path join $VIRTIO_WIN_ISO
 
-    let debug_cmd = match $debug {
+    let debug_cmd = match $dry {
         false => '',
         true => "
             --dry-run
@@ -48,14 +49,14 @@ export def build [
     nu -c $cmd
 }
 
-def debug_unattend [state: record, img: record]: nothing -> string {
+def dry_unattend [state: record, img: record]: nothing -> string {
     open ($DIR_SELF | path join 'autounattend.xml.liquid')
     | str soak $img
 }
 
-export def build_unattend [state: record, img: record, debug: bool = false]: nothing -> path {
-    if $debug {
-        return (debug_unattend $state $img)
+export def build_unattend [state: record, img: record, dry: bool = false, debug: bool = false]: nothing -> path {
+    if $dry {
+        return (dry_unattend $state $img)
     }
     
     let tmp_dir = (mktemp -d .infra-unattend.XXXXXX)
