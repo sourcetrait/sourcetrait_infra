@@ -105,12 +105,13 @@ def make_img [
     }
 
     if $nick != null {
-        $out.name = $nick | str kebab-case | default -e null
-        if $out.name == null {
-            error make --unspanned $"invalid nick: $(nick)"
+        let name = $nick | str kebab-case | default -e null
+        if $name == null {
+            error make --unspanned $"invalid nick: ($nick)"
         }
 
-        $out.hostname = $nick
+        $out.name = $name
+        $out.hostname = $name
     } else if $img != null {
         $out = $out | merge $img
     }
