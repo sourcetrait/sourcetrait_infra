@@ -8,13 +8,24 @@ export def build [
     dry: bool = false
     debug: bool = false
 ]: nothing -> nothing {
-    let unattend_iso = match $dry {
-        true => ($state.path.vm.unattend_dir | path join $"($img.name).unattend.iso"),
-        false => (build_unattend $state $img)
-    }
+    let unattend_iso = build_unattend $state $img
     let disk = $state.path.vm.disk_dir | path join $"($img.name).qcow2" | path expand
     let windows_iso = $state.path.vm.iso_dir | path join $WINDOWS_ISO
     let virtio_iso = $state.path.vm.iso_dir | path join $VIRTIO_WIN_ISO
+
+    let ui_cmd = match $debug {
+        false => "
+            --graphics none
+            --video none
+            --autoconsole text
+            --wait -1
+        "
+        true => "
+            --graphics spice,listen=127.0.0.1
+            --video qxl
+            --input tablet,bus=usb
+        "
+    }
 
     let debug_cmd = match $dry {
         false => '',
@@ -30,19 +41,18 @@ export def build [
         --memory 32768
         --vcpus 16
         --os-variant win2k25
-        --disk format=qcow2,size=260,bus=sata,path=($disk)
+        --disk format=qcow2,size=260,bus=nvme,path=($disk)
         --cdrom ($windows_iso)
         --disk device=cdrom,bus=sata,path=($unattend_iso)
         --disk device=cdrom,bus=sata,path=($virtio_iso)
         --network model=virtio,network=($img.network)
-        --graphics spice,listen=127.0.0.1
-        --video qxl
         --sound none
         --controller type=virtio-serial
-        --input tablet,bus=usb
+        --serial pty
         --channel unix,target.type=virtio,target.name=org.qemu.guest_agent.0
         --memballoon virtio
         --boot uefi,hd,cdrom
+        ($ui_cmd)
         ($debug_cmd)
     )"
 

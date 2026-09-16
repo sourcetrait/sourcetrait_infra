@@ -4,6 +4,11 @@ Set-PSDebug -Trace 1
 
 Write-Host "[UNATTEND] STEP BEGIN: 1"
 
+function step_serial_console {
+    bcdedit.exe /emssettings EMSPORT:1 EMSBAUDRATE:115200
+    bcdedit.exe /ems '{current}' on
+}
+
 function step_virtio_drivers {
     $virtio_exits = @(
         0 # success
@@ -17,6 +22,7 @@ function step_virtio_drivers {
     }
 }
 
+step_serial_console
 step_virtio_drivers
 
 Write-Host "[UNATTEND] STEP END: 1"
