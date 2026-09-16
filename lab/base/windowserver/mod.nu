@@ -41,7 +41,7 @@ export def build [
         --memory 32768
         --vcpus 16
         --os-variant win2k25
-        --disk format=qcow2,size=260,bus=nvme,path=($disk)
+        --disk format=qcow2,size=260,bus=sata,path=($disk)
         --cdrom ($windows_iso)
         --disk device=cdrom,bus=sata,path=($unattend_iso)
         --disk device=cdrom,bus=sata,path=($virtio_iso)
