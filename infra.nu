@@ -260,5 +260,36 @@ export def 'main setup windows server' []: nothing -> nothing {
     setup_virtio_win_iso $state
 }
 
+export def 'main delete' [name: string]: nothing -> nothing {
+    let state = init
+    let vm = virsh list --all | from ssv | skip 1 | where Name == $name | first
+    if $vm == null {
+        return
+    }
+    
+    if $vm.State != 'shut off' {
+        virsh -q destroy $name | ignore -eo
+    }
+    
+    let r = virsh -q domblklist $name | complete
+    if $r.exit_code == 0 {
+        let paths = $r.stdout | from ssv --noheaders | get column1
+        let todos = [
+            [pool dir vol];
+            [disk $state.path.vm.disk_dir $"($name).qcow2"]
+            [unattend $state.path.vm.unattend_dir $"($name).unattend.iso"]
+        ]
+    
+        for todo in $todos {
+            let path = ($todo.dir | path join $todo.vol)
+            if ($path in $paths) {
+                virsh -q vol-delete --pool $todo.pool $todo.vol | ignore -eo
+            }
+        }
+    }
+    
+    virsh -q undefine --nvram $name | ignore -eo
+}
+
 # do stuff
 export def main [] { help infra }
