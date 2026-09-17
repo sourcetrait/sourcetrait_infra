@@ -254,7 +254,7 @@ function step_user_pwrusr {
 
     # setup config
     $config = "C:\Users\$user\.config"
-    Copy-Item 'E:\config\*' $config -Recurse
+    Copy-Item 'E:\pwrusr\config\*' $config -Recurse
 
     Get-ChildItem -LiteralPath $config -Recurse -Force -File |
         ForEach-Object { $_.IsReadOnly = $false }

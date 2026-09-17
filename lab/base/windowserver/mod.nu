@@ -74,6 +74,7 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     let ssh_dir = ($target_dir | path join '.ssh')
     let iso_file = ($tmp_dir | path join 'unattend.iso')
     mkdir $target_dir
+    cd $target_dir
 
     mkdir $ssh_dir
     chown ($env.USER):($env.USER) $ssh_dir
@@ -94,8 +95,11 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     | save ($target_dir | path join 'img.json')
 
     # copy pwrusr config assets
-    git checkout-index
-    cp -r ($state.path.pwrusr_repo | path join 'config') ($target_dir | path join 'config')
+    let pwrusr_tar = ($target_dir | path join 'pwrusr.tar')
+    git archive --format tar --prefix pwrusr/ --output $pwrusr_tar HEAD
+    tar -xf $pwrusr_tar
+    rm $pwrusr_tar
+    
     # copy unattended assets
     cp -r ($DIR_SELF | path join 'unattend' '*' | into glob) $target_dir
 
