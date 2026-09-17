@@ -94,6 +94,7 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     | save ($target_dir | path join 'img.json')
 
     # copy pwrusr config assets
+    git checkout-index
     cp -r ($state.path.pwrusr_repo | path join 'config') ($target_dir | path join 'config')
     # copy unattended assets
     cp -r ($DIR_SELF | path join 'unattend' '*' | into glob) $target_dir
