@@ -1,12 +1,12 @@
-# Active Directory Lab
-> `lab/ad/kvm/`  
-> `  controller/` Windows Server (Core) 2025. Configured as a Domain Controller.  
-> `  member/` Windows Server (Core) 2025. Configured as a Member Server.
+# Windows Server Base
+Standardized development environment for Windows Server.
 
-Testing against a domain controller and its member server.
+- Headless, with serial console configured.
+- Latest Powershell.
+- Defender disabled. Recovery disabled.
+- SSHD with pubkey-only.
+- Visual Studio components, Rust, Nushell, Chocolatey, Helix.
+- Fully updated during installation.  
+- VS components pre-compiled during installation.
 
-## Instructions
-1. Build the controller VM.
-2. Build the member VM.
-
-### 1. Build
+A pwrusr 'lab' account is configured on each.

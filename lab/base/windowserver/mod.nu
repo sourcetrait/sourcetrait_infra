@@ -80,9 +80,10 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     chmod -R 700 $ssh_dir
 
     # generate xml
-    open ($DIR_SELF | path join 'autounattend.xml.liquid')
-    | str soak $img
-    | save ($target_dir | path join 'autounattend.xml')
+    #open ($DIR_SELF | path join 'autounattend.xml.liquid')
+    #| str soak $img
+    #| save ($target_dir | path join 'autounattend.xml')
+    $img | soak dir ($DIR_SELF | path join 'autounattend') $target_dir
 
     # generate img.json
     {
@@ -92,8 +93,8 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     | to json
     | save ($target_dir | path join 'img.json')
 
-    # copy usrlay config assets
-    cp -r ($state.path.usrlay_repo | path join 'config') ($target_dir | path join 'config')
+    # copy pwrusr config assets
+    cp -r ($state.path.pwrusr_repo | path join 'config') ($target_dir | path join 'config')
     # copy unattended assets
     cp -r ($DIR_SELF | path join 'unattend' '*' | into glob) $target_dir
 

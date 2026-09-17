@@ -204,7 +204,7 @@ function step_rust {
 }
 
 
-function step_user_usrlay {
+function step_user_pwrusr {
     param(
         [Parameter(Mandatory)]
         [pscustomobject]$img,
@@ -221,25 +221,32 @@ function step_user_usrlay {
     # disable password expiry
     Set-LocalUser -Name $user -PasswordNeverExpires $true
 
-    $HOME_DIRS = @('.config','.sys','ai','bak','cab','data','doc','down','img','mdl','mnt','proj','repo','snd','sync','tmp','tpl','txt','vid','web')
-    $SYS_DIRS = @('cache','data','state','desk','local','bak','mnt','my','of','secret','srv')
-    $SYS_NU_DIRS = @('bin','mod')
-    $LOCAL_DIRS = @('bin','etc','lib','opt','var','share','src','doc')
-    $SECRET_DIRS = @('cache','data','state','my')
-    $SRV_DIRS = @('git')
-    $MY_SYS_DIRS = @('exe','cfg','lib','asset','data','doc','pkg','src')
-    $MIX_DIRS = @('img/wall','img/pic','img/screen','img/scan','snd/music','vid/movie','txt/book','txt/paper','txt/guide','txt/ref','web/site','web/page','web/shot')
-    $TPL_DIRS = @('img','snd','vid','mdl','ai','data','doc','proj','repo','cab')
+    $HOME_DIRS = @('.config','.ssh','sys','bak','data','doc','down','mix','proj','sort','repo','tpl')
+    $CONFIG_DIRS = @('secret')
+    $SSH_DIRS = @('key')
+    $SYS_DIRS = @('cache','data','state','secret','local','use','of','mnt','srv','sync')
+    $SYS_DATA_DIRS = @('desktop')
+    $SYS_OF_NU_DIRS = @('exe','mod')
+    $SYS_LOCAL_DIRS = @('bin','etc','lib','opt','var','share','doc','src')
+    $SYS_USE_DIRS = @('exe','cfg','lib','pkg','data','asset','doc','src')
+    $SYS_SECRET_DIRS = @('cache','data','state')
+    $SYS_SRV_DIRS = @('git')
+    $WHOM_DIRS = @('as','at','me')
+    $MIX_DIRS = @('calc','img','mdl','snd','txt','vid','web')
 
     $DIRS = $HOME_DIRS +
-        ($SYS_DIRS | ForEach-Object { ".sys\$_" }) +
-        ($SYS_NU_DIRS | ForEach-Object { ".sys\of\nu\$_" }) +
-        ($LOCAL_DIRS | ForEach-Object { ".sys\local\$_" }) +
-        ($SECRET_DIRS | ForEach-Object { ".sys\secret\$_" }) +
-        ($SRV_DIRS | ForEach-Object { ".sys\srv\$_" }) +
-        ($MY_SYS_DIRS | ForEach-Object { ".sys\my\$_" }) +
-        $MIX_DIRS +
-        ($TPL_DIRS | ForEach-Object { "tpl\$_" })
+        ($CONFIG_DIRS | ForEach-Object { ".config\$_" }) +
+        ($SSH_DIRS | ForEach-Object { ".ssh\$_" }) +
+        ($WHOM_DIRS | ForEach-Object { ".ssh\key\$_" })
+        ($SYS_DIRS | ForEach-Object { "sys\$_" }) +
+        ($SYS_DATA_DIRS | ForEach-Object { "sys\data\$_" }) +
+        ($SYS_OF_NU_DIRS | ForEach-Object { "sys\of\nu\$_" }) +
+        ($SYS_LOCAL_DIRS | ForEach-Object { "sys\local\$_" }) +
+        ($SYS_SECRET_DIRS | ForEach-Object { "sys\secret\$_" }) +
+        ($SYS_SRV_DIRS | ForEach-Object { "sys\srv\$_" }) +
+        ($SYS_USE_DIRS | ForEach-Object { "sys\use\$_" }) +
+        ($WHOM_DIRS | ForEach-Object { "sys\sync\$_" }) +
+        ($MIX_DIRS | ForEach-Object { "mix\$_" })
 
     foreach ($d in $DIRS) {
         New-Item -ItemType Directory (Join-Path "C:\Users\$user" $d) -Force
@@ -410,7 +417,7 @@ function step_default_profile {
     reg.exe add 'HKU\DefaultUser\Environment' /v XDG_STATE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\state' /f
 
     # UENV_USR_SPEC
-    reg.exe add 'HKU\DefaultUser\Environment' /v UENV_USR_SPEC /t REG_SZ /d 'usrlay' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v UENV_USR_SPEC /t REG_SZ /d 'pwrusr' /f
 
     # CARGO_TARGET_DIR
     reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_TARGET_DIR /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache\cargo\target' /f
@@ -451,7 +458,7 @@ switch ($step) {
        step_update $img
        step_net
        step_virtio_tools
-       step_user_usrlay $img 'lab'
+       step_user_pwrusr $img 'lab'
        step_vs
        step_rust
        step_choco_packages
