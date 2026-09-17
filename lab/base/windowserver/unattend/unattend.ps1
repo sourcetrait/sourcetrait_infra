@@ -221,38 +221,9 @@ function step_user_pwrusr {
     # disable password expiry
     Set-LocalUser -Name $user -PasswordNeverExpires $true
 
-    $HOME_DIRS = @('.config','.ssh','sys','bak','data','doc','down','mix','proj','sort','repo','tpl')
-    $CONFIG_DIRS = @('secret')
-    $SSH_DIRS = @('key')
-    $SYS_DIRS = @('cache','data','state','secret','local','use','of','mnt','srv','sync')
-    $SYS_DATA_DIRS = @('desktop')
-    $SYS_OF_NU_DIRS = @('exe','mod')
-    $SYS_LOCAL_DIRS = @('bin','etc','lib','opt','var','share','doc','src')
-    $SYS_USE_DIRS = @('exe','cfg','lib','pkg','data','asset','doc','src')
-    $SYS_SECRET_DIRS = @('cache','data','state')
-    $SYS_SRV_DIRS = @('git')
-    $WHOM_DIRS = @('as','at','me')
-    $MIX_DIRS = @('calc','img','mdl','snd','txt','vid','web')
+    & E:\pwrusr\shell\powershell\mkpwrhome.ps1 "C:\Users\$user" $user
 
-    $DIRS = $HOME_DIRS +
-        ($CONFIG_DIRS | ForEach-Object { ".config\$_" }) +
-        ($SSH_DIRS | ForEach-Object { ".ssh\$_" }) +
-        ($WHOM_DIRS | ForEach-Object { ".ssh\key\$_" })
-        ($SYS_DIRS | ForEach-Object { "sys\$_" }) +
-        ($SYS_DATA_DIRS | ForEach-Object { "sys\data\$_" }) +
-        ($SYS_OF_NU_DIRS | ForEach-Object { "sys\of\nu\$_" }) +
-        ($SYS_LOCAL_DIRS | ForEach-Object { "sys\local\$_" }) +
-        ($SYS_SECRET_DIRS | ForEach-Object { "sys\secret\$_" }) +
-        ($SYS_SRV_DIRS | ForEach-Object { "sys\srv\$_" }) +
-        ($SYS_USE_DIRS | ForEach-Object { "sys\use\$_" }) +
-        ($WHOM_DIRS | ForEach-Object { "sys\sync\$_" }) +
-        ($MIX_DIRS | ForEach-Object { "mix\$_" })
-
-    foreach ($d in $DIRS) {
-        New-Item -ItemType Directory (Join-Path "C:\Users\$user" $d) -Force
-    }
-
-    # setup config
+    # setup config using pwrusr assets
     $config = "C:\Users\$user\.config"
     Copy-Item 'E:\pwrusr\config\*' $config -Recurse
 
@@ -260,15 +231,10 @@ function step_user_pwrusr {
         ForEach-Object { $_.IsReadOnly = $false }
 
     # setup nushell
-    New-Item -ItemType SymbolicLink -Path "$config\nushell\scripts" -Target "C:\Users\$user\.sys\of\nu\mod"
     register_nu_plugins $cred $user
 
-    # setup helix (doesn't honor xdg config)
+    # setup helix. doesn't honor xdg config, so symlink it
     New-Item -ItemType SymbolicLink -Path "C:\Users\$user\AppData\Roaming\helix" -Target "$config\helix"
-
-    foreach ($d in $HOME_DIRS) {
-        icacls.exe "C:\Users\$user\$d" /setowner $user /t /c
-    }
 
     # setup ssh
     $ssh = "C:\Users\$user\.ssh"
@@ -276,7 +242,10 @@ function step_user_pwrusr {
     Get-ChildItem -LiteralPath $ssh -Recurse -Force -File |
         ForEach-Object { $_.IsReadOnly = ($_.Name -like 'id_*') }
         
-    icacls.exe $ssh /setowner $user /t /c
+    # final take of ownership of home
+    icacls.exe "C:\Users\$user" /setowner $user /t /c
+    
+    # grant SYSTEM access to .ssh
     icacls.exe $ssh /inheritance:r /grant "${user}:(OI)(CI)F" /grant 'SYSTEM:(OI)(CI)F'
 }
 
@@ -289,10 +258,10 @@ function register_nu_plugins {
       [string]$user
     )
 
-    $user_root = Join-Path 'C:\Users' $user
+    $user_root = "C:\Users\$user"
     $nu_dir = 'C:\Program Files\nu\bin'
-    $nu = Join-Path $nu_dir 'nu.exe'
-    $plugin_registry = Join-Path $user_root '.config\nushell\plugin.msgpackz'
+    $nu = "$nu_dir\nu.exe"
+    $plugin_registry = "$user_root\.config\nushell\plugin.msgpackz"
 
     $plugins = @(
       Get-ChildItem $nu_dir -Filter 'nu_plugin_*.exe' -File |
