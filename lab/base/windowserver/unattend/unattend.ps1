@@ -221,7 +221,7 @@ function step_user_pwrusr {
     # disable password expiry
     Set-LocalUser -Name $user -PasswordNeverExpires $true
 
-    & E:\pwrusr\shell\powershell\mkpwrhome.ps1 "C:\Users\$user" $user
+    & E:\pwrusr\shells\powershell\mkpwrhome.ps1 "C:\Users\$user"
 
     # setup config using pwrusr assets
     $config = "C:\Users\$user\.config"
@@ -238,15 +238,11 @@ function step_user_pwrusr {
 
     # setup ssh
     $ssh = "C:\Users\$user\.ssh"
-    Copy-Item 'E:\.ssh' $ssh -Recurse
+    Copy-Item 'E:\.ssh\*' $ssh -Recurse
     Get-ChildItem -LiteralPath $ssh -Recurse -Force -File |
         ForEach-Object { $_.IsReadOnly = ($_.Name -like 'id_*') }
         
-    # final take of ownership of home
-    icacls.exe "C:\Users\$user" /setowner $user /t /c
-    
-    # grant SYSTEM access to .ssh
-    icacls.exe $ssh /inheritance:r /grant "${user}:(OI)(CI)F" /grant 'SYSTEM:(OI)(CI)F'
+    & E:\pwrusr\shells\powershell\ownpwrhome.ps1 "C:\Users\$user" $user
 }
 
 function register_nu_plugins {
