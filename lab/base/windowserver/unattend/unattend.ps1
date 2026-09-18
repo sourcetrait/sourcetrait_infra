@@ -376,24 +376,24 @@ function step_default_profile {
     reg.exe load 'HKU\DefaultUser' 'C:\Users\Default\NTUSER.DAT'
 
     # PATH
-    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\.sys\of\cargo\bin' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v Path /t REG_EXPAND_SZ /d '%USERPROFILE%\AppData\Local\Microsoft\WindowsApps;%USERPROFILE%\sys\of\cargo\bin' /f
 
     # XDG_CONFIG_HOME
     reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CONFIG_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.config' /f
     # XDG_CACHE_HOME
-    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CACHE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_CACHE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\sys\cache' /f
     # XDG_DATA_HOME
-    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_DATA_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\data' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_DATA_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\sys\data' /f
     # XDG_STATE_HOME
-    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_STATE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\state' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v XDG_STATE_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\sys\state' /f
 
     # UENV_USR_SPEC
     reg.exe add 'HKU\DefaultUser\Environment' /v UENV_USR_SPEC /t REG_SZ /d 'pwrusr' /f
 
     # CARGO_TARGET_DIR
-    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_TARGET_DIR /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\cache\cargo\target' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_TARGET_DIR /t REG_EXPAND_SZ /d '%USERPROFILE%\sys\cache\cargo\target' /f
     # CARGO_HOME
-    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\.sys\of\cargo' /f
+    reg.exe add 'HKU\DefaultUser\Environment' /v CARGO_HOME /t REG_EXPAND_SZ /d '%USERPROFILE%\sys\of\cargo' /f
 
     reg.exe unload 'HKU\DefaultUser'
 }
