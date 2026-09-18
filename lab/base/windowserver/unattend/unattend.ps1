@@ -263,14 +263,20 @@ function register_nu_plugins {
     $nu = "$nu_dir\nu.exe"
     $plugin_registry = "$user_root\.config\nushell\plugin.msgpackz"
 
+    # collect standard plugins
     $plugins = @(
-      Get-ChildItem $nu_dir -Filter 'nu_plugin_*.exe' -File |
-          Sort-Object Name
+        Get-ChildItem -File -Filter 'nu_plugin_*.exe' $nu_dir
+        | Sort-Object Name
     )
-
     if ($plugins.Count -eq 0) {
-      throw "[UNATTEND] ERROR Nushell plugins not found in: $nu_dir"
+        throw "[UNATTEND] ERROR Nushell plugins not found in: $nu_dir"
     }
+
+    # collect plugins from the pwrusr location, recursively
+    $plugins += @(
+        Get-ChildItem -File -Recurse -Filter 'nu_plugin_*.exe' "C:\Users\$user\sys\of\nu\plugins"
+        | Sort-Object Name
+    )
 
     $run_id = [guid]::NewGuid().ToString('N')
     $temporary_dir = Join-Path $user_root 'tmp'
@@ -279,8 +285,8 @@ function register_nu_plugins {
     $plugin_stderr = Join-Path $temporary_dir "register-plugins-$run_id.stderr"
 
     $plugin_lines = foreach ($plugin in $plugins) {
-      $plugin_literal = ConvertTo-Json -InputObject $plugin.FullName -Compress
-      "plugin add $plugin_literal"
+        $plugin_literal = ConvertTo-Json -InputObject $plugin.FullName -Compress
+        "plugin add $plugin_literal"
     }
 
     $plugin_lines | Set-Content $plugin_script -Encoding utf8
