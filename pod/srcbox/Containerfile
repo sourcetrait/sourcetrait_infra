@@ -1,0 +1,17 @@
+FROM registry.fedoraproject.org/fedora-toolbox:44
+LABEL name="sourcetrait/infra/srcbox" version="0.0.0-1"
+
+USER root
+ENV HOME=/tmp
+WORKDIR /tmp
+
+RUN --mount=type=bind,source=extern/dist,target=/mnt/dist << EOF
+set -euo pipefail
+tar -xf /mnt/dist/srcbox.tar
+cd srcbox
+./setup.bash
+cd /tmp
+rm -rf /tmp/* /tmp/.*
+EOF
+
+ENTRYPOINT ["/opt/srcbox/entry/entry.sshd.sh"]

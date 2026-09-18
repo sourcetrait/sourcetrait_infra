@@ -4,11 +4,11 @@ const INFRA_DIR: directory = path self .
 const CONFIG_DIRNAME: directory = 'sourcetrait/infra'
 const INETS: list<string> = [default test infra]
 
-const BUILDS: table<namepath: path, hostname: string, subnet: list<string>> = [
-    [ namepath             hostname        subnet   ];
-    [ 'lab/windowserver'   'windowserver'  [lab]    ]
-    [ 'lab/ad/controller'  'controller'    [ad lab] ]
-    [ 'lab/ad/member'      'member'        [ad lab] ]
+const BUILDS: table<kind: string, namepath: path, hostname: string, subnet: list<string>> = [
+    [ kind  namepath             hostname        subnet   ];
+    [ vm    'lab/windowserver'   'windowserver'  [lab]    ]
+    [ vm    'lab/ad/controller'  'controller'    [ad lab] ]
+    [ vm    'lab/ad/member'      'member'        [ad lab] ]
 ]
 const PATH_LAB_WINDOWSERVER: directory = 'lab/windowserver'
 const PATH_LAB_AD_CONTROLLER: directory = 'lab/ad/controller'
@@ -135,15 +135,15 @@ export def 'main build' [
     
     match $namepath {
         $PATH_LAB_WINDOWSERVER => {
-            overlay use --prefix ./lab/windowserver 
+            overlay use --prefix ./vm/lab/windowserver 
             windowserver build $state $img $dry $debug
         },
         $PATH_LAB_AD_CONTROLLER => {
-            overlay use --prefix ./lab/ad/controller 
+            overlay use --prefix ./vm/lab/ad/controller 
             controller build $state $img $dry $debug
         },
         $PATH_LAB_AD_MEMBER => {
-            overlay use --prefix ./lab/ad/member 
+            overlay use --prefix ./vm/lab/ad/member 
             member build $state $img $dry $debug
         },
         _ => {
@@ -168,15 +168,15 @@ export def 'main build unattend' [
     
     let iso_file = match $namepath {
         $PATH_LAB_WINDOWSERVER => {
-            overlay use --prefix ./lab/windowserver 
+            overlay use --prefix ./vm/lab/windowserver 
             windowserver build_unattend $state $img $dry $debug
         },
         $PATH_LAB_AD_CONTROLLER => {
-            overlay use --prefix ./lab/ad/controller 
+            overlay use --prefix ./vm/lab/ad/controller 
             controller build_unattend $state $img $dry $debug
         },
         $PATH_LAB_AD_MEMBER => {
-            overlay use --prefix ./lab/ad/member 
+            overlay use --prefix ./vm/lab/ad/member 
             member build_unattend $state $img $dry $debug
         },
         _ => {
