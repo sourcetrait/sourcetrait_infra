@@ -1,4 +1,5 @@
 const DIR_SELF: directory = path self .
+const DIR_INFRA: directory = path self ../../..
 const WINDOWS_ISO: path = 'windows_server_2025.noprompt.iso'
 const VIRTIO_WIN_ISO: path = 'virtio-win.iso'
 
@@ -81,10 +82,9 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     chmod -R 700 $ssh_dir
 
     # generate xml
-    #open ($DIR_SELF | path join 'autounattend.xml.liquid')
-    #| str soak $img
-    #| save ($target_dir | path join 'autounattend.xml')
-    $img | soak dir ($DIR_SELF | path join 'autounattend') $target_dir
+    open ($DIR_SELF | path join 'autounattend.xml.liquid')
+    | str soak $img
+    | save ($target_dir | path join 'autounattend.xml')
 
     # generate img.json
     {
@@ -96,7 +96,9 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
 
     # copy pwrusr config assets
     let pwrusr_tar = ($target_dir | path join 'pwrusr.tar')
+    cd ($DIR_INFRA | path join 'extern/pwrusr')
     git archive --format tar --prefix pwrusr/ --output $pwrusr_tar HEAD
+    cd $target_dir
     tar -xf $pwrusr_tar
     rm $pwrusr_tar
     
@@ -122,6 +124,7 @@ export def build_unattend [state: record, img: record, dry: bool = false, debug:
     chown ($env.USER):($state.group.vm) $unattend_iso
     chmod 660 $unattend_iso
     
+    cd $DIR_INFRA
     rm -rf $tmp_dir
     $unattend_iso
 }
